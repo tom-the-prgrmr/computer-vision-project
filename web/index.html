@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<title>Yoga Pose Demo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  #preview { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
+  #result { margin-top: 1rem; white-space: pre-wrap; font-family: monospace; }
+</style>
+</head>
+<body>
+  <h1>Yoga Pose Detection &amp; Form Scoring — Demo</h1>
+  <p>Upload 1 ảnh, gọi API <code>/predict</code> đang chạy tại <code>http://localhost:8000</code>.</p>
+  <input type="file" id="fileInput" accept="image/*" />
+  <img id="preview" hidden />
+  <pre id="result"></pre>
+
+  <script>
+    const API_URL = "http://localhost:8000/predict";
+    const fileInput = document.getElementById("fileInput");
+    const preview = document.getElementById("preview");
+    const result = document.getElementById("result");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+      result.textContent = "Đang gọi API...";
+
+      const form = new FormData();
+      form.append("image", file);
+
+      try {
+        const res = await fetch(API_URL, { method: "POST", body: form });
+        if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
+        const data = await res.json();
+        result.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        result.textContent = "Lỗi: " + err.message + "\n(Đảm bảo FastAPI đang chạy ở localhost:8000)";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Training / model
+ultralytics>=8.2         # YOLOv8 detection (main trainable model)
+torch>=2.2
+torchvision>=0.17
+
+# Pose scoring layer (pretrained, not trained by us)
+mediapipe>=0.10
+
+# Data
+roboflow>=1.1            # download bbox-annotated yoga pose dataset
+opencv-python-headless>=4.9
+numpy>=1.26
+pandas>=2.2
+pillow>=10.2
+
+# Eval / analysis
+scikit-learn>=1.4
+matplotlib>=3.8
+seaborn>=0.13
+grad-cam>=1.5            # Grad-CAM for error analysis
+
+# Export / deployment
+onnx>=1.16
+onnxruntime>=1.17        # swap for onnxruntime-gpu on the rented GPU server
+
+# API
+fastapi>=0.111
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+pydantic>=2.7
+
+# Notebooks
+jupyter>=1.0

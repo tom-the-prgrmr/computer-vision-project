@@ -3,10 +3,10 @@ HTTP concepts here, just "given image bytes, return detections + form
 scores".
 
 Owns the two external resources (ONNX detector, MediaPipe Pose) and
-orchestrates them with src/pose_scoring/angle_rules.py. app/main.py creates
-one instance at import time and reuses it for every request — loading the
-ONNX session / MediaPipe is the expensive part, never re-create this per
-request.
+orchestrates them with src/pose_scoring/angle_rules.py. app/controller.py
+creates one instance at import time and reuses it for every request —
+loading the ONNX session / MediaPipe is the expensive part, never re-create
+this per request.
 """
 
 import io
@@ -59,7 +59,7 @@ class PoseDetectionService:
         (33, 2) array of pixel-space landmarks, or None if no pose found."""
         raise NotImplementedError("Wire up alongside src/pose_scoring/angle_rules.py.")
 
-    # ---- public API used by app/main.py ----
+    # ---- public API used by app/controller.py ----
 
     def predict_image(self, image_bytes: bytes) -> PredictResponse:
         start = time.perf_counter()

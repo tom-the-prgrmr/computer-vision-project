@@ -90,11 +90,13 @@ nhận và chuyển sang Giai đoạn 1.
   trực tiếp). Người dùng chọn **commit `.claude/` vào repo** (không
   gitignore). Commit `b5e8846` trên `main`, `git push origin main` thành
   công, `git status` sạch — acceptance của T0.1 đạt đủ.
-- **T0.2–T0.5 — deferred, ngoài môi trường CLI này.** Cần người dùng tự làm:
-  lấy Roboflow API key → điền `.env` (T0.2), thêm Colab Secret
-  `ROBOFLOW_API_KEY` (T0.3), mount Drive + clone repo vào Drive trong Colab
-  (T0.4), `pip install -r requirements.txt` trong Colab + xác nhận
-  `ultralytics`/`mediapipe` import được (T0.5). Không có gì trong repo cần
-  sửa cho các việc này — chạy lại `/next-step` sau khi làm xong để xác nhận
-  và chuyển sang Giai đoạn 1 (việc T1.1 `download_data.sh` sẽ tự lộ lỗi nếu
-  còn thiếu key).
+- **T0.2–T0.5 — done (2026-09-03), xác nhận bằng lời của người dùng.** Đã
+  làm ngoài môi trường CLI này: Roboflow API key → `.env` (T0.2, xác nhận
+  file `.env` tồn tại ở local), Colab Secret `ROBOFLOW_API_KEY` (T0.3),
+  mount Drive + clone repo vào Drive (T0.4), `pip install -r
+  requirements.txt` trong Colab (T0.5). Không có artifact nào trong repo
+  để tự kiểm chứng các việc này (đúng như dự kiến trong "Bằng chứng" ở
+  trên) — nếu key/setup thực ra chưa đúng, việc chạy
+  `notebooks/01_data_exploration.ipynb` ở Giai đoạn 1 sẽ tự lộ lỗi ngay.
+
+Toàn bộ Giai đoạn 0 hoàn tất.

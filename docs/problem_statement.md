@@ -64,8 +64,50 @@ gian thực.
 
 | Giai đoạn | Nguồn | Số lớp | Ghi chú |
 |---|---|---|---|
-| v1 (an toàn deadline) | [YOLO YOGA Dataset – Roboflow Universe](https://universe.roboflow.com/object-detection-dt-wzpc6/yolo-yoga-dataset) | 5 (Bridge, Downward Dog, Plank, Shoulderstand, Tree) | Có sẵn bounding box, format YOLO, ~1013 ảnh |
+| v1 (an toàn deadline) | [YOLO YOGA Dataset – Roboflow Universe](https://universe.roboflow.com/object-detection-dt-wzpc6/yolo-yoga-dataset) | 5 (Bridge, Downward Dog, Plank, Shoulderstand, Tree) | Có sẵn bounding box, format YOLO, 1013 ảnh (xác nhận thật, xem chi tiết bên dưới) |
 | v2 (nếu có GPU server) | Yoga-82 (classification) + bootstrap bbox bằng pretrained person detector | 15–20 | Xem `src/data/bootstrap_bbox.py` |
 
 So sánh v1 → v2 (thêm lớp, thêm dữ liệu) chính là câu chuyện cho mục 5 (Feedback
 loop – cải tiến), có số liệu mAP trước/sau rõ ràng.
+
+### v1 — số liệu thực tế (chạy `notebooks/01_data_exploration.ipynb` trên Colab)
+
+**Số ảnh mỗi split:**
+
+| Split | Số ảnh |
+|---|---|
+| train | 709 |
+| valid | 203 |
+| test | 101 |
+| **Tổng** | **1013** |
+
+**Phân bố bbox theo lớp** (gộp cả 3 split; nhãn gốc trong `data.yaml` có tiền tố
+`yoga-pose `, đã bỏ cho gọn):
+
+| Lớp | Số bbox |
+|---|---|
+| downward (Downward Dog) | 248 |
+| tree | 216 |
+| shoulderstand | 206 |
+| plank | 195 |
+| bridge | 158 |
+
+Tổng 1023 bbox trên 1013 ảnh (~10 ảnh có nhiều hơn 1 học viên/box). Imbalance
+**nhẹ** — tỉ lệ lớp nhiều nhất/ít nhất ≈ 1.57× (248/158), không cần
+oversampling/class-weight ở baseline; `bridge` là lớp ít ảnh nhất nên nếu
+confusion matrix sau này (Giai đoạn 4) cho thấy `bridge` bị nhầm nhiều, đây là
+nghi phạm đầu tiên.
+
+**Sanity-check bbox** (10 ảnh mẫu, 2 ảnh/lớp — xem notebook T1.4): đa số bbox
+khớp đúng vị trí học viên. Phát hiện 1 trường hợp lệch: 1 ảnh `shoulderstand`
+(ảnh minh hoạ nền chữ, không phải ảnh chụp thật) có bbox hẹp hơn tư thế thực
+tế, không bao trọn người trong ảnh — ghi nhận là nhiễu nhãn có thể có trong
+tập Roboflow, không sửa tay ở bước này (số lượng nhỏ, không đáng kể so với
+1013 ảnh), nhưng cần nhớ lại nếu sau này error analysis (Giai đoạn 4) thấy lớp
+`shoulderstand` có vấn đề bbox.
+
+**Augmentation đã chốt** (dùng cho `train()` ở Giai đoạn 2):
+`flipud=0.0` (tắt — lật dọc làm tư thế yoga vô nghĩa), `fliplr=0.5` (giữ — đối
+xứng trái/phải an toàn), `degrees=10` (giới hạn thấp — xoay mạnh làm sai lệch
+bbox lẫn góc khớp có ý nghĩa cho lớp rule-based sau này). Không chỉnh lại sau
+khi xem ảnh T1.4 — ảnh gốc đã đủ đa dạng góc chụp.

@@ -11,19 +11,19 @@ mục Buffer cuối file — không cắt vào 7 mục bắt buộc.
 
 ## Giai đoạn 0 — Setup (28/8)
 - [x] T0.1 `git diff` review lại thay đổi hiện tại, commit, push lên `origin/main`
-- [ ] T0.2 Tạo Roboflow account / lấy API key, điền vào `.env` local (theo mẫu `.env.example`, **không** commit `.env`)
-- [ ] T0.3 Mở Colab, thêm Colab Secret `ROBOFLOW_API_KEY`
-- [ ] T0.4 Mount Google Drive, `git clone` repo vào Drive (để checkpoint không mất khi hết session)
-- [ ] T0.5 `pip install -r requirements.txt` trong Colab, xác nhận `ultralytics`/`mediapipe` import được
+- [x] T0.2 Tạo Roboflow account / lấy API key, điền vào `.env` local (theo mẫu `.env.example`, **không** commit `.env`)
+- [x] T0.3 Mở Colab, thêm Colab Secret `ROBOFLOW_API_KEY`
+- [x] T0.4 Mount Google Drive, `git clone` repo vào Drive (để checkpoint không mất khi hết session)
+- [x] T0.5 `pip install -r requirements.txt` trong Colab, xác nhận `ultralytics`/`mediapipe` import được
 
 ## Giai đoạn 1 — Data (29/8 – 30/8)
 File: `scripts/download_data.sh`, `notebooks/01_data_exploration.ipynb`
-- [ ] T1.1 Chạy `scripts/download_data.sh` (hoặc gọi trực tiếp Roboflow Python API trong notebook) → xác nhận `data/raw/yoga_v1/{train,valid,test}` + `data.yaml` tồn tại
-- [ ] T1.2 Load `data.yaml`, in số lớp + số ảnh mỗi split
-- [ ] T1.3 Vẽ biểu đồ phân bố ảnh theo lớp (kiểm tra imbalance)
-- [ ] T1.4 Vẽ bbox lên 2-3 ảnh mẫu mỗi lớp để sanity-check nhãn đúng
-- [ ] T1.5 Chốt augmentation: tắt `flipud`, giữ `fliplr`, giới hạn `degrees` (tránh xoay mạnh sai lệch tư thế) — ghi cụ thể giá trị dùng
-- [ ] T1.6 Ghi kết quả (nguồn, số lượng, split, imbalance, augmentation + lý do) vào mục "Data" của `docs/problem_statement.md`
+- [x] T1.1 Chạy `scripts/download_data.sh` (hoặc gọi trực tiếp Roboflow Python API trong notebook) → xác nhận `data/raw/yoga_v1/{train,valid,test}` + `data.yaml` tồn tại
+- [x] T1.2 Load `data.yaml`, in số lớp + số ảnh mỗi split
+- [x] T1.3 Vẽ biểu đồ phân bố ảnh theo lớp (kiểm tra imbalance)
+- [x] T1.4 Vẽ bbox lên 2-3 ảnh mẫu mỗi lớp để sanity-check nhãn đúng
+- [x] T1.5 Chốt augmentation: tắt `flipud`, giữ `fliplr`, giới hạn `degrees` (tránh xoay mạnh sai lệch tư thế) — ghi cụ thể giá trị dùng
+- [x] T1.6 Ghi kết quả (nguồn, số lượng, split, imbalance, augmentation + lý do) vào mục "Data" của `docs/problem_statement.md`
 
 ## Giai đoạn 2 — Baseline training (31/8 – 1/9)
 File: `src/models/train.py`, `notebooks/02_train_detector.ipynb`
@@ -80,8 +80,9 @@ File: `web/index.html`
 - [ ] T8.4 Fix lỗi lệch toạ độ overlay canvas vs kích thước video hiển thị nếu có (lỗi thường gặp)
 
 ## Giai đoạn 9 — Deploy public (12/9)
-- [ ] T9.1 Chốt host (VM GPU thuê + Caddy/Let's Encrypt, hoặc PaaS có TLS sẵn nếu chỉ cần CPU cho ONNX)
-- [ ] T9.2 Set up HTTPS thật
+- [ ] T9.1 Chốt host — **mặc định: Hugging Face Spaces (Docker Space)**, free tier, có HTTPS sẵn (giải quyết luôn ràng buộc HTTPS cho camera iPhone ở §7 REQUIREMENTS, khỏi tự set up Caddy/Let's Encrypt); CPU đủ cho ONNX Runtime ở mức demo. Chỉ đổi sang VM GPU thuê + Caddy nếu latency CPU không chấp nhận được
+- [ ] T9.1b *(optional)* Upload `best.onnx` lên Hugging Face Hub — link tải public gọn hơn cho README, thay vì xin quyền Google Drive
+- [ ] T9.2 Set up HTTPS thật (bỏ qua nếu dùng HF Spaces — đã có sẵn)
 - [ ] T9.3 Sửa `API_BASE` trong `web/index.html`, siết `allow_origins` trong `app/main.py` về đúng domain frontend
 - [ ] T9.4 Deploy backend + serve `web/index.html`
 - [ ] T9.5 Test camera trên **iPhone thật** qua URL HTTPS công khai — đây là điều kiện để coi FR7 hoàn thành

@@ -2,46 +2,218 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Yoga Pose Demo</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 1.5rem auto; padding: 0 1rem; }
+  .tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+  .tabs button { flex: 1; padding: .6rem; border: 1px solid #ccc; background: #f4f4f4; cursor: pointer; }
+  .tabs button.active { background: #333; color: #fff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
   #preview { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
-  #result { margin-top: 1rem; white-space: pre-wrap; font-family: monospace; }
+  #result { margin-top: 1rem; white-space: pre-wrap; font-family: monospace; font-size: .8rem; }
+  #camWrap { position: relative; width: 100%; margin-top: 1rem; }
+  #camVideo { width: 100%; display: block; background: #000; }
+  #camOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .camControls { display: flex; gap: .5rem; margin-top: .5rem; flex-wrap: wrap; }
+  .camControls button { padding: .5rem 1rem; }
+  .status { font-size: .85rem; color: #666; margin-top: .3rem; }
+  code { background: #f0f0f0; padding: 0 .2rem; }
 </style>
 </head>
 <body>
   <h1>Yoga Pose Detection &amp; Form Scoring — Demo</h1>
-  <p>Upload 1 ảnh, gọi API <code>/predict</code> đang chạy tại <code>http://localhost:8000</code>.</p>
-  <input type="file" id="fileInput" accept="image/*" />
-  <img id="preview" hidden />
+  <p>API mặc định: <code id="apiUrlLabel"></code> — sửa trong <code>API_BASE</code> ở cuối file nếu deploy nơi khác.</p>
+
+  <div class="tabs">
+    <button id="tabCameraBtn" class="active">Camera trực tiếp</button>
+    <button id="tabUploadBtn">Upload ảnh</button>
+  </div>
+
+  <!-- ===== Live camera (chính — dùng trên điện thoại/iPhone) ===== -->
+  <div id="panelCamera" class="panel active">
+    <p class="status">
+      Cần mở trang này qua <strong>HTTPS</strong> (hoặc <code>localhost</code> khi dev) —
+      Safari/Chrome trên điện thoại chặn camera nếu không có HTTPS.
+    </p>
+    <div id="camWrap">
+      <video id="camVideo" playsinline autoplay muted></video>
+      <canvas id="camOverlay"></canvas>
+    </div>
+    <div class="camControls">
+      <button id="startCamBtn">Bật camera</button>
+      <button id="stopCamBtn" disabled>Tắt camera</button>
+      <button id="flipCamBtn" disabled>Đổi camera trước/sau</button>
+    </div>
+    <div id="camStatus" class="status"></div>
+  </div>
+
+  <!-- ===== Upload ảnh tĩnh (phụ, để test nhanh không cần camera) ===== -->
+  <div id="panelUpload" class="panel">
+    <input type="file" id="fileInput" accept="image/*" />
+    <img id="preview" hidden />
+  </div>
+
   <pre id="result"></pre>
 
   <script>
-    const API_URL = "http://localhost:8000/predict";
+    // Sửa dòng này khi deploy: trỏ đúng domain HTTPS của backend FastAPI.
+    const API_BASE = "http://localhost:8000";
+    document.getElementById("apiUrlLabel").textContent = API_BASE + "/predict";
+
+    const result = document.getElementById("result");
+
+    // ---- Tabs ----
+    const tabCameraBtn = document.getElementById("tabCameraBtn");
+    const tabUploadBtn = document.getElementById("tabUploadBtn");
+    const panelCamera = document.getElementById("panelCamera");
+    const panelUpload = document.getElementById("panelUpload");
+
+    function showTab(name) {
+      const isCam = name === "camera";
+      panelCamera.classList.toggle("active", isCam);
+      panelUpload.classList.toggle("active", !isCam);
+      tabCameraBtn.classList.toggle("active", isCam);
+      tabUploadBtn.classList.toggle("active", !isCam);
+      if (!isCam) stopCamera();
+    }
+    tabCameraBtn.addEventListener("click", () => showTab("camera"));
+    tabUploadBtn.addEventListener("click", () => showTab("upload"));
+
+    // ---- Upload ảnh tĩnh ----
     const fileInput = document.getElementById("fileInput");
     const preview = document.getElementById("preview");
-    const result = document.getElementById("result");
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
-
       preview.src = URL.createObjectURL(file);
       preview.hidden = false;
       result.textContent = "Đang gọi API...";
-
-      const form = new FormData();
-      form.append("image", file);
-
       try {
-        const res = await fetch(API_URL, { method: "POST", body: form });
-        if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
-        const data = await res.json();
-        result.textContent = JSON.stringify(data, null, 2);
+        result.textContent = JSON.stringify(await callPredict(file), null, 2);
       } catch (err) {
-        result.textContent = "Lỗi: " + err.message + "\n(Đảm bảo FastAPI đang chạy ở localhost:8000)";
+        result.textContent = "Lỗi: " + err.message;
       }
     });
+
+    // ---- Camera trực tiếp ----
+    const camVideo = document.getElementById("camVideo");
+    const camOverlay = document.getElementById("camOverlay");
+    const camStatus = document.getElementById("camStatus");
+    const startCamBtn = document.getElementById("startCamBtn");
+    const stopCamBtn = document.getElementById("stopCamBtn");
+    const flipCamBtn = document.getElementById("flipCamBtn");
+    const ctx = camOverlay.getContext("2d");
+
+    let stream = null;
+    let facingMode = "environment"; // "environment" = camera sau, "user" = camera trước
+    let loopTimer = null;
+    let inFlight = false;
+    const CAPTURE_INTERVAL_MS = 400; // ~2.5 fps — cân bằng độ mượt vs băng thông 4G
+
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        camStatus.textContent = "Trình duyệt không hỗ trợ getUserMedia (hoặc trang chưa chạy qua HTTPS).";
+        return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+          audio: false,
+        });
+        camVideo.srcObject = stream;
+        await camVideo.play();
+        resizeOverlay();
+        startCamBtn.disabled = true;
+        stopCamBtn.disabled = false;
+        flipCamBtn.disabled = false;
+        camStatus.textContent = "Camera đang chạy...";
+        loopTimer = setInterval(captureAndPredict, CAPTURE_INTERVAL_MS);
+      } catch (err) {
+        camStatus.textContent = "Không mở được camera: " + err.message;
+      }
+    }
+
+    function stopCamera() {
+      if (loopTimer) clearInterval(loopTimer);
+      loopTimer = null;
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+        stream = null;
+      }
+      ctx.clearRect(0, 0, camOverlay.width, camOverlay.height);
+      startCamBtn.disabled = false;
+      stopCamBtn.disabled = true;
+      flipCamBtn.disabled = true;
+      camStatus.textContent = "";
+    }
+
+    async function flipCamera() {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      stopCamera();
+      await startCamera();
+    }
+
+    function resizeOverlay() {
+      camOverlay.width = camVideo.videoWidth || camVideo.clientWidth;
+      camOverlay.height = camVideo.videoHeight || camVideo.clientHeight;
+    }
+
+    async function captureAndPredict() {
+      if (inFlight || !stream) return; // đợi request trước xong, tránh dồn request khi mạng chậm
+      inFlight = true;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = camVideo.videoWidth;
+        canvas.height = camVideo.videoHeight;
+        canvas.getContext("2d").drawImage(camVideo, 0, 0);
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.7) // nén JPEG cho nhẹ mạng di động
+        );
+        if (!blob) return;
+        const data = await callPredict(blob);
+        drawDetections(data.detections || []);
+        result.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        camStatus.textContent = "Lỗi gọi API: " + err.message;
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    function drawDetections(detections) {
+      resizeOverlay();
+      ctx.clearRect(0, 0, camOverlay.width, camOverlay.height);
+      ctx.lineWidth = 3;
+      ctx.font = "16px sans-serif";
+      for (const d of detections) {
+        const [x1, y1, x2, y2] = d.box;
+        ctx.strokeStyle = d.form_ok === false ? "red" : "limegreen";
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        const label = `${d.pose} (${Math.round(d.confidence * 100)}%)`;
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fillText(label, x1 + 4, Math.max(16, y1 - 6));
+        if (d.tips?.length) {
+          ctx.fillText(d.tips[0], x1 + 4, y2 + 16);
+        }
+      }
+    }
+
+    startCamBtn.addEventListener("click", startCamera);
+    stopCamBtn.addEventListener("click", stopCamera);
+    flipCamBtn.addEventListener("click", flipCamera);
+    window.addEventListener("beforeunload", stopCamera);
+
+    // ---- Shared API call ----
+    async function callPredict(fileOrBlob) {
+      const form = new FormData();
+      form.append("image", fileOrBlob, "frame.jpg");
+      const res = await fetch(API_BASE + "/predict", { method: "POST", body: form });
+      if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
+      return res.json();
+    }
   </script>
 </body>
 </html>

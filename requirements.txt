@@ -17,7 +17,7 @@ pillow>=10.2
 scikit-learn>=1.4
 matplotlib>=3.8
 seaborn>=0.13
-grad-cam>=1.5            # Grad-CAM for error analysis
+grad-cam>=1.5            # EigenCAM for error analysis (classic Grad-CAM doesn't fit detection — see docs/REQUIREMENTS.md §7)
 
 # Export / deployment
 onnx>=1.16

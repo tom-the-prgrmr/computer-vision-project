@@ -1,34 +1,36 @@
-"""FastAPI service: image in -> detected pose(s) + form score out.
+"""FastAPI entrypoint.
+
+CONTROLLER layer lives in this file: HTTP routes only — parse the request,
+call the service, shape the response. All detection/scoring logic lives in
+app/service.py (SERVICE layer). Data shapes: app/schemas.py.
 
 Run: uvicorn app.main:app --reload
 """
 
+import os
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
+from app.schemas import PredictResponse
+from app.service import PoseDetectionService
+
+# ---- SERVICE (model layer) — one instance for the whole process, reused
+# across every request. Loading the model happens lazily inside it, not here.
+service = PoseDetectionService(
+    model_path=os.getenv("MODEL_PATH", "models/best.onnx"),
+    conf_threshold=float(os.getenv("DETECTOR_CONF_THRESHOLD", "0.5")),
+)
+
+# ---- CONTROLLER (HTTP layer) ----
 app = FastAPI(title="Yoga Pose Detection & Form Scoring")
 
-# Loose CORS for the local web demo; tighten before any real deployment.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # dev only — narrow to the real frontend domain before deploy (docs/PLAN.md T9.3)
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-class Detection(BaseModel):
-    pose: str
-    confidence: float
-    box: list[float]  # x1, y1, x2, y2
-    form_ok: bool | None = None
-    tips: list[str] = []
-
-
-class PredictResponse(BaseModel):
-    detections: list[Detection]
-    latency_ms: float
 
 
 @app.get("/health")
@@ -38,10 +40,11 @@ def health() -> dict:
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(image: UploadFile = File(...)) -> PredictResponse:
-    """TODO:
-    1. load ONNX-exported YOLO model once at startup (not per-request)
-    2. run detection on the uploaded image
-    3. for each box, crop + run MediaPipe Pose + src.pose_scoring.angle_rules.score_pose
-    4. return detections with form_ok/tips filled in
-    """
-    raise NotImplementedError("Wire up once the detector is trained and exported to ONNX.")
+    image_bytes = await image.read()
+    return service.predict_image(image_bytes)
+
+
+@app.post("/predict_video")
+async def predict_video(video: UploadFile = File(...)):
+    video_bytes = await video.read()
+    return service.predict_video(video_bytes)

@@ -4,8 +4,9 @@ Mini project cuối module Computer Vision (AI Engineer K08-0226). Phát hiện 
 phân loại tư thế yoga của học viên qua ảnh/video, chấm điểm form bằng phân tích
 góc khớp, và triển khai thành API + web demo.
 
-Chi tiết bài toán: [`docs/problem_statement.md`](docs/problem_statement.md)
-Checklist bám sát đề bài: [`docs/requirement_checklist.md`](docs/requirement_checklist.md)
+**Requirement đầy đủ (nguồn chân lý)**: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+Chi tiết bài toán (dùng cho mục 1 khi nộp bài): [`docs/problem_statement.md`](docs/problem_statement.md)
+Checklist bám sát rubric đề bài: [`docs/requirement_checklist.md`](docs/requirement_checklist.md)
 
 ## Kiến trúc
 
@@ -56,7 +57,12 @@ pip install -r requirements.txt
 3. **Eval / error analysis**: `notebooks/03_evaluation_error_analysis.ipynb`
 4. **Export ONNX**: `notebooks/04_export_onnx.ipynb`
 5. **Serve API**: `uvicorn app.main:app --reload`
-6. **Web demo**: mở `web/index.html`, trỏ tới API đang chạy (mặc định `localhost:8000`)
+6. **Web demo**: mở `web/index.html` — tab "Camera trực tiếp" (chính, dùng
+   camera điện thoại/iPhone qua `getUserMedia`) hoặc tab "Upload ảnh" (test
+   nhanh). Sửa `API_BASE` trong file nếu API không chạy ở `localhost:8000`.
+   ⚠️ Camera trên điện thoại **chỉ hoạt động qua HTTPS** (hoặc `localhost` lúc
+   dev) — xem ràng buộc HTTPS/CORS trong `docs/REQUIREMENTS.md` mục 7 trước
+   khi deploy.
 
 ## Trạng thái
 

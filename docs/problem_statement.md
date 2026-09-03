@@ -4,6 +4,30 @@
 Phát hiện và phân loại động tác (tư thế) yoga của học viên trong ảnh/video, sau đó
 chấm điểm độ chính xác của form và đưa ra gợi ý cải thiện.
 
+## Requirement đã chốt
+
+| # | Yêu cầu | Đáp ứng bằng |
+|---|---|---|
+| 1 | Train 1 model nhận diện học viên tập yoga **trên video** | YOLOv8 chạy inference theo từng frame video (xem "Xử lý video" bên dưới) — chỉ 1 model duy nhất, không tách riêng model detect người |
+| 2 | Detect vùng nào là người tập | Output bounding box của YOLOv8 (localization) |
+| 3 | Phân loại động tác | Output class của YOLOv8 (mỗi lớp = 1 tư thế) — cùng 1 forward pass với #2, không phải model riêng |
+| 4 | Gán nhãn đúng/sai | Lớp rule-based `src/pose_scoring/angle_rules.py`: MediaPipe Pose (pretrained) trích khớp trong box đã detect → so góc với ngưỡng chuẩn → `form_ok: true/false` |
+| 5 | Đưa ra phương án cải thiện | Cùng lớp rule-based ở #4, sinh `tips` theo khớp nào lệch ngưỡng (vd "duỗi thẳng chân trụ hơn") |
+
+**1 model train duy nhất** = YOLOv8 detection (đáp ứng #1-#3 trong cùng 1 lần
+infer/frame). #4-#5 là logic rule-based nối tiếp sau, không phải model thứ 2 cần
+train — giữ đúng scope "1 trong 3 dạng bài toán đã học" của đề bài.
+
+## Xử lý video
+`app/main.py` cần thêm đường xử lý video (ngoài `/predict` ảnh đơn hiện có):
+đọc video theo frame (OpenCV `VideoCapture`), chạy YOLOv8 + rule-based scoring
+trên từng frame, ghi/stream kết quả (bounding box + tư thế + đúng/sai + tip) đè
+lên video output hoặc trả về dạng JSON theo từng frame. Có thể thêm tracking đơn
+giản (vd ByteTrack tích hợp sẵn trong Ultralytics — `model.track()`) để giữ ID
+học viên ổn định qua các frame và làm mượt kết quả (tránh nhấp nháy đổi tư thế
+liên tục do model dự đoán sai lệch ở vài frame lẻ) — coi đây là điểm cộng, không
+bắt buộc cho bản đầu tiên chạy được.
+
 ## Ai dùng, dùng để làm gì
 Người tự tập yoga tại nhà (không có huấn luyện viên trực tiếp kiểm tra form), hoặc
 huấn luyện viên muốn giám sát nhiều học viên cùng lúc qua camera lớp học. Sản phẩm

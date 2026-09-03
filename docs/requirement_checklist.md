@@ -24,6 +24,8 @@ viết README và làm slide.
 - [ ] **6. Phần tự nghĩ thêm** — lớp chấm điểm form bằng góc khớp MediaPipe
       → `src/pose_scoring/angle_rules.py`
 - [ ] **7. Deployment** — export ONNX, FastAPI, benchmark latency/FPS, web demo
+      **xử lý video** (không chỉ ảnh đơn — xem "Xử lý video" trong
+      `docs/problem_statement.md`)
       → `notebooks/04_export_onnx.ipynb`, `app/`, `web/`
 
 ## Sản phẩm nộp

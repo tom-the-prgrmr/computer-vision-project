@@ -1,7 +1,7 @@
 # Spec — G0. Setup (rubric: nền tảng cho toàn bộ 7 mục, không tính riêng)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 0 (`T0.1`–`T0.5`)
-**Status:** draft <!-- draft -> approved (human review) -> implemented (set by implement-spec) -->
+**Status:** implemented <!-- T0.1 only — T0.2-T0.5 deferred, see Implementation notes -->
 
 ## Mục tiêu
 
@@ -82,3 +82,19 @@ nhận và chuyển sang Giai đoạn 1.
 - `.claude/` (thư mục skill/config của Claude Code) hiện đang untracked —
   xác nhận với người dùng có muốn commit nó vào repo hay thêm vào
   `.gitignore` trước khi push, vì nó ảnh hưởng đến người khác clone repo.
+
+## Implementation notes
+
+- **T0.1 — done.** Review qua `git diff` (không có gì bất ngờ: đúng phạm vi
+  controller/service split trong `app/`, cập nhật docs, web demo camera
+  trực tiếp). Người dùng chọn **commit `.claude/` vào repo** (không
+  gitignore). Commit `b5e8846` trên `main`, `git push origin main` thành
+  công, `git status` sạch — acceptance của T0.1 đạt đủ.
+- **T0.2–T0.5 — deferred, ngoài môi trường CLI này.** Cần người dùng tự làm:
+  lấy Roboflow API key → điền `.env` (T0.2), thêm Colab Secret
+  `ROBOFLOW_API_KEY` (T0.3), mount Drive + clone repo vào Drive trong Colab
+  (T0.4), `pip install -r requirements.txt` trong Colab + xác nhận
+  `ultralytics`/`mediapipe` import được (T0.5). Không có gì trong repo cần
+  sửa cho các việc này — chạy lại `/next-step` sau khi làm xong để xác nhận
+  và chuyển sang Giai đoạn 1 (việc T1.1 `download_data.sh` sẽ tự lộ lỗi nếu
+  còn thiếu key).

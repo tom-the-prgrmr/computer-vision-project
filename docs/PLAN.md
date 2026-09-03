@@ -10,7 +10,7 @@ trong 1 giai đoạn trừ khi ghi "song song". Nếu trễ tiến độ, cắt 
 mục Buffer cuối file — không cắt vào 7 mục bắt buộc.
 
 ## Giai đoạn 0 — Setup (28/8)
-- [ ] T0.1 `git diff` review lại thay đổi hiện tại, commit, push lên `origin/main`
+- [x] T0.1 `git diff` review lại thay đổi hiện tại, commit, push lên `origin/main`
 - [ ] T0.2 Tạo Roboflow account / lấy API key, điền vào `.env` local (theo mẫu `.env.example`, **không** commit `.env`)
 - [ ] T0.3 Mở Colab, thêm Colab Secret `ROBOFLOW_API_KEY`
 - [ ] T0.4 Mount Google Drive, `git clone` repo vào Drive (để checkpoint không mất khi hết session)
@@ -63,12 +63,12 @@ File: `src/pose_scoring/angle_rules.py`
 - [ ] T6.5 Xử lý pose ngoài `POSE_RULES` (chưa hiệu chỉnh) — trả `ok=True`, `issues=[]` thay vì crash
 
 ## Giai đoạn 7 — Export & Backend (9/9 – 10/9)
-File: `notebooks/04_export_onnx.ipynb`, `app/main.py`
+File: `notebooks/04_export_onnx.ipynb`, `app/service.py`, `app/controller.py`
 - [ ] T7.1 `model.export(format="onnx")` trên model tốt nhất (từ GĐ5), xác nhận file `.onnx` chạy được
 - [ ] T7.2 Benchmark latency: N lần inference PyTorch `.pt` vs ONNX Runtime `.onnx`, lập bảng avg latency/FPS
 - [ ] T7.3 *(optional, cần dư thời gian/GPU thuê)* thử dynamic quantization ONNX, benchmark lại
-- [ ] T7.4 `app/main.py`: load `onnxruntime.InferenceSession` 1 lần lúc startup (không load lại mỗi request)
-- [ ] T7.5 Implement `/predict`: ảnh → YOLO ONNX infer → mỗi box crop → MediaPipe → `score_pose()` → trả `Detection[]`
+- [ ] T7.4 `app/service.py`: implement `_ensure_loaded()`/`_detect()` — load `onnxruntime.InferenceSession` 1 lần (lazy, không load lại mỗi request)
+- [ ] T7.5 Implement `_extract_landmarks()` (MediaPipe) trong `app/service.py`; `/predict` ở `app/controller.py` chỉ cần gọi `service.predict_image()` — đã wire sẵn
 - [ ] T7.6 Test bằng `curl -F "image=@sample.jpg" localhost:8000/predict`, kiểm tra response khớp schema
 - [ ] T7.7 *(optional)* implement `/predict_video`
 

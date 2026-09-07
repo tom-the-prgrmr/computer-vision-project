@@ -53,7 +53,8 @@ pip install -r requirements.txt
 ## Chạy lại từ đầu
 
 1. **Tải dữ liệu**: `scripts/download_data.sh` (Roboflow v1, 5 lớp)
-2. **Train**: `notebooks/02_train_detector.ipynb` hoặc `python -m src.models.train`
+2. **Train**: `notebooks/02_train_detector.ipynb` (gọi `train()` từ
+   `src/models/train.py` — không có CLI riêng, chỉ dùng qua notebook)
 3. **Eval / error analysis**: `notebooks/03_evaluation_error_analysis.ipynb`
 4. **Export ONNX**: `notebooks/04_export_onnx.ipynb`
 5. **Serve API**: `uvicorn app.main:app --reload`

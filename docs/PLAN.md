@@ -27,7 +27,7 @@ File: `scripts/download_data.sh`, `notebooks/01_data_exploration.ipynb`
 
 ## Giai đoạn 2 — Baseline training (31/8 – 1/9)
 File: `src/models/train.py`, `notebooks/02_train_detector.ipynb`
-- [ ] T2.1 Viết `train()` trong `src/models/train.py`: wrapper quanh `ultralytics.YOLO(model).train(data=..., epochs=..., seed=..., **kwargs)`
+- [x] T2.1 Viết `train()` trong `src/models/train.py`: wrapper quanh `ultralytics.YOLO(model).train(data=..., epochs=..., seed=..., **kwargs)`
 - [ ] T2.2 Gọi từ notebook với `model="yolov8n.pt"`, `seed=42`, epochs baseline (vd 50)
 - [ ] T2.3 Xác nhận `results.csv`/`results.png` (loss/mAP theo epoch) được lưu ở `runs/detect/...`
 - [ ] T2.4 Copy `weights/best.pt` sang Google Drive để không mất khi hết session

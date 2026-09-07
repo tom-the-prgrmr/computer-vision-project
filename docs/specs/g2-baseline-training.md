@@ -1,7 +1,7 @@
 # Spec — G2. Baseline training (rubric: mục 3 — Huấn luyện)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 2 (`T2.1`–`T2.5`)
-**Status:** implemented <!-- T2.1 (code) done — T2.2-T2.5 (chạy thật) deferred, xem Implementation notes -->
+**Status:** implemented
 
 ## Mục tiêu
 
@@ -81,9 +81,10 @@ ghi lại mAP@0.5 / mAP@0.5:0.95 baseline làm mốc so sánh cho các bước s
 
 ## Bằng chứng / số liệu kỳ vọng
 
-- `runs/detect/<name>/results.csv` + `results.png` (loss/mAP theo epoch).
-- `runs/detect/<name>/weights/best.pt` tồn tại, nằm trong Drive.
-- mAP@0.5 và mAP@0.5:0.95 baseline (số thật, từ notebook đã chạy).
+- `runs/detect/<name>/results.csv` + `results.png` (loss/mAP theo epoch) — có.
+- `runs/detect/<name>/weights/best.pt` tồn tại, nằm trong Drive — có.
+- mAP@0.5 = **0.9923**, mAP@0.5:0.95 = **0.8435** (số thật, chạy trên Colab
+  T4, `yolov8n.pt`, 50 epochs, seed=42).
 
 ## Cách bạn tự test sau khi tôi xong
 
@@ -149,6 +150,21 @@ hội tụ (vẫn giảm mạnh ở epoch cuối), có thể cần bàn lại t�
     JSON + cú pháp Python của cả 2 notebook (`01`, `02`) hợp lệ. Không gọi
     `train(...)` thật (cần network tải checkpoint + GPU + dataset — ngoài
     phạm vi CLI này).
-- **T2.2-T2.5 (chạy training thật trên Colab) — deferred.** Cần bạn tự mở
-  `notebooks/02_train_detector.ipynb` trên Colab (GPU T4), chạy tuần tự —
-  xem "Cách bạn tự test" ở trên.
+- **T2.2-T2.5 — done.** Chạy thật trên Colab (T4 GPU), `yolov8n.pt`,
+  `seed=42`, `epochs=50`. Kết quả: **mAP@0.5 = 0.9923, mAP@0.5:0.95 =
+  0.8435** — rất cao cho baseline, dataset v1 tương đối "dễ" (5 lớp phân
+  biệt rõ về hình dạng tư thế, học viên thường chiếm phần lớn khung hình).
+  Ghi vào markdown cell cuối `notebooks/02_train_detector.ipynb`. `results.
+  save_dir` xác nhận nằm trong Drive (`/content/drive/...`), `results.csv`/
+  `results.png`/`weights/{best,last}.pt` đều tồn tại.
+
+  Lưu ý phát sinh lúc chạy (không phải lỗi, chỉ perf warning): Ultralytics
+  cảnh báo "Slow image access" vì đọc ảnh từ Drive (mounted, chậm hơn đĩa
+  local Colab) — không chặn training, chỉ là đánh đổi đã chọn ở Giai đoạn 1
+  (train trong Drive để không mất `best.pt` khi hết session). Không cần xử
+  lý; có thể thêm `cache=True` vào lần gọi `train()` sau nếu muốn train
+  nhanh hơn (cache ảnh vào RAM sau lần đọc đầu).
+
+**Giai đoạn 2 hoàn tất** — tất cả T2.1–T2.5 đã tick trong `docs/PLAN.md`.
+mAP baseline dùng làm mốc so sánh cho Giai đoạn 3 (ablation) và Giai đoạn 5
+(feedback loop retrain).

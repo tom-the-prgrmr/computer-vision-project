@@ -28,10 +28,10 @@ File: `scripts/download_data.sh`, `notebooks/01_data_exploration.ipynb`
 ## Giai đoạn 2 — Baseline training (31/8 – 1/9)
 File: `src/models/train.py`, `notebooks/02_train_detector.ipynb`
 - [x] T2.1 Viết `train()` trong `src/models/train.py`: wrapper quanh `ultralytics.YOLO(model).train(data=..., epochs=..., seed=..., **kwargs)`
-- [ ] T2.2 Gọi từ notebook với `model="yolov8n.pt"`, `seed=42`, epochs baseline (vd 50)
-- [ ] T2.3 Xác nhận `results.csv`/`results.png` (loss/mAP theo epoch) được lưu ở `runs/detect/...`
-- [ ] T2.4 Copy `weights/best.pt` sang Google Drive để không mất khi hết session
-- [ ] T2.5 Ghi mAP@0.5, mAP@0.5:0.95 baseline vào markdown cell trong notebook
+- [x] T2.2 Gọi từ notebook với `model="yolov8n.pt"`, `seed=42`, epochs baseline (vd 50)
+- [x] T2.3 Xác nhận `results.csv`/`results.png` (loss/mAP theo epoch) được lưu ở `runs/detect/...`
+- [x] T2.4 Copy `weights/best.pt` sang Google Drive để không mất khi hết session
+- [x] T2.5 Ghi mAP@0.5, mAP@0.5:0.95 baseline vào markdown cell trong notebook
 
 ## Giai đoạn 3 — Ablation (2/9 – 3/9)
 - [ ] T3.1 Chọn biến ablation: **augmentation on vs off** (rẻ nhất, chạy 2 lần là đủ)

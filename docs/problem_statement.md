@@ -111,3 +111,25 @@ tập Roboflow, không sửa tay ở bước này (số lượng nhỏ, không �
 xứng trái/phải an toàn), `degrees=10` (giới hạn thấp — xoay mạnh làm sai lệch
 bbox lẫn góc khớp có ý nghĩa cho lớp rule-based sau này). Không chỉnh lại sau
 khi xem ảnh T1.4 — ảnh gốc đã đủ đa dạng góc chụp.
+
+## Training baseline (Giai đoạn 2)
+
+`yolov8n.pt`, `seed=42`, `epochs=50`, `imgsz=640`, augmentation như trên.
+Kết quả (Colab, T4 GPU): **mAP@0.5 = 0.9923, mAP@0.5:0.95 = 0.8435**. Rất
+cao cho baseline — dataset v1 tương đối "dễ" (5 lớp phân biệt rõ hình dạng
+tư thế, học viên thường chiếm phần lớn khung hình).
+
+## Ablation (Giai đoạn 3)
+
+Biến duy nhất thay đổi: **augmentation** (ON = baseline ở trên; OFF = tắt
+toàn bộ augmentation — mosaic, hsv, flip, rotate, translate, scale, shear,
+perspective, mixup, copy_paste, erasing), giữ nguyên `model`/`seed`/
+`epochs`/`imgsz` — xem `docs/specs/g3-ablation.md`.
+
+| Run | mAP@0.5 | mAP@0.5:0.95 | Thời gian train (s) |
+|---|---|---|---|
+| ON (baseline) | 0.9923 | 0.8435 | *(chưa có — chờ chạy)* |
+| OFF (no aug) | *(chưa có — chờ chạy)* | *(chưa có — chờ chạy)* | *(chưa có — chờ chạy)* |
+
+**Kết luận:** *(điền sau khi chạy `notebooks/02_train_detector.ipynb` phần
+T3.1-T3.4 trên Colab và gửi lại số liệu thật)*.

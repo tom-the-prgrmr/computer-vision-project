@@ -152,14 +152,24 @@ implement, không phải lựa chọn cần bạn quyết trước.
   ở trên, rồi gửi lại quan sát (cặp lớp hay nhầm nếu có, nhận xét ảnh
   EigenCAM) để mình viết tóm tắt T4.5.
 
-- **Lỗi phát sinh khi chạy thật (đã sửa):** `cam(tensor)` báo
-  `TypeError: BaseCAM.__call__() missing 1 required positional argument:
-  'targets'` — bản `grad-cam` cài trên Colab (1.5.7, không có upper bound
-  trong `requirements.txt`) khai báo `targets: Optional[List[Module]]`
-  **không có default**, khác với API cũ hơn dùng `targets=None` mặc định.
-  Đã kiểm tra source thật của `EigenCAM`/`BaseCAM` (cài local trong
-  `.venv`) xác nhận `EigenCAM` set `uses_gradients=False` và
-  `get_cam_image()` chỉ dùng `activations` (bỏ qua `targets` hoàn toàn) —
-  nên truyền tường minh `targets=None` là an toàn, không ảnh hưởng kết
-  quả. Sửa `eigencam_overlay()` trong notebook: `cam(tensor,
-  targets=None)`.
+- **Lỗi phát sinh khi chạy thật (đã sửa, 2 vòng):**
+  1. `cam(tensor)` báo `TypeError: ... missing 1 required positional
+     argument: 'targets'` — bản `grad-cam` cài trên Colab (1.5.7, không có
+     upper bound trong `requirements.txt`) khai báo `targets:
+     Optional[List[Module]]` **không có default**. Sửa lần 1:
+     `cam(tensor, targets=None)`.
+  2. Lần 1 lộ lỗi tiếp: `AttributeError: 'tuple' object has no attribute
+     'cpu'` — khi `targets=None`, `BaseCAM.forward()` cố tự suy ra target
+     bằng `outputs.cpu().data.numpy()`, nhưng output thô của
+     `DetectionModel` (khi gọi trực tiếp, không qua `YOLO.predict()`) là 1
+     **tuple**, không phải tensor đơn, nên crash trước khi tới logic thật
+     của EigenCAM. Sửa lần 2: `cam(tensor, targets=[])` — list rỗng khác
+     `None` nên né được nhánh suy luận target đó.
+  Đã verify cả 2 điểm bằng cách đọc source `EigenCAM`/`BaseCAM` thật (cài
+  trong `.venv`: `uses_gradients=False`, `get_cam_image()` chỉ dùng
+  `activations`, không đụng `targets`) **và** dựng thử 1 model
+  `yolov8n.yaml` (random-init, không cần checkpoint/mạng) để chạy thật
+  toàn bộ pipeline `EigenCAM(...)(tensor, targets=[])` trong `.venv` —
+  thành công, heatmap hợp lệ (0-1, đúng shape). `model.model[-2]` xác nhận
+  đúng là `C2f` — layer ngay trước `Detect`, khớp `TARGET_LAYER_INDEX`
+  mặc định trong notebook.

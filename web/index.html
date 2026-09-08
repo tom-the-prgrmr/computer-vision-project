@@ -11,8 +11,19 @@
   .tabs button.active { background: #333; color: #fff; }
   .panel { display: none; }
   .panel.active { display: block; }
-  #preview { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
-  #result { margin-top: 1rem; white-space: pre-wrap; font-family: monospace; font-size: .8rem; }
+  #uploadCanvas { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; display: block; }
+  #resultCards { margin-top: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+  .detCard { border: 1px solid #ddd; border-left: 4px solid #999; border-radius: 4px; padding: .5rem .8rem; }
+  .detCard.ok { border-left-color: limegreen; }
+  .detCard.bad { border-left-color: #d9362f; }
+  .detCard .detHead { display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-weight: 600; }
+  .detCard .detStatus { font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .detCard .detStatus.ok { color: #1a7f37; }
+  .detCard .detStatus.bad { color: #d9362f; }
+  .detCard ul { margin: .4rem 0 0; padding-left: 1.1rem; font-size: .85rem; color: #444; }
+  #resultRaw { margin-top: .8rem; font-size: .8rem; color: #666; }
+  #resultRaw summary { cursor: pointer; }
+  #result { margin-top: .4rem; white-space: pre-wrap; font-family: monospace; font-size: .8rem; }
   #camWrap { position: relative; width: 100%; margin-top: 1rem; }
   #camVideo { width: 100%; display: block; background: #000; }
   #camOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -52,10 +63,15 @@
   <!-- ===== Upload ảnh tĩnh (phụ, để test nhanh không cần camera) ===== -->
   <div id="panelUpload" class="panel">
     <input type="file" id="fileInput" accept="image/*" />
-    <img id="preview" hidden />
+    <canvas id="uploadCanvas" hidden></canvas>
   </div>
 
-  <pre id="result"></pre>
+  <div id="resultCards"></div>
+  <p id="resultMeta" class="status"></p>
+  <details id="resultRaw">
+    <summary>Xem dữ liệu JSON gốc</summary>
+    <pre id="result"></pre>
+  </details>
 
   <script>
     // Sửa dòng này khi deploy: trỏ đúng domain HTTPS của backend FastAPI.
@@ -63,6 +79,46 @@
     document.getElementById("apiUrlLabel").textContent = API_BASE + "/predict";
 
     const result = document.getElementById("result");
+    const resultCards = document.getElementById("resultCards");
+    const resultMeta = document.getElementById("resultMeta");
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Hiển thị dễ đọc (card theo từng detection) thay vì chỉ dump JSON thô —
+    // JSON gốc vẫn giữ trong <details> bên dưới để debug khi cần.
+    function renderResults(data) {
+      const detections = data.detections || [];
+      resultCards.innerHTML = detections.length
+        ? detections
+            .map((d) => {
+              const cls = d.form_ok === false ? "bad" : "ok";
+              const statusText = d.form_ok === false ? "✗ Cần chỉnh form" : d.form_ok === true ? "✓ Form ổn" : "— (không chấm được form)";
+              const tipsHtml = d.tips?.length
+                ? `<ul>${d.tips.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>`
+                : "";
+              return `<div class="detCard ${cls}">
+                <div class="detHead">
+                  <span>${escapeHtml(d.pose)} — ${Math.round(d.confidence * 100)}%</span>
+                  <span class="detStatus ${cls}">${statusText}</span>
+                </div>
+                ${tipsHtml}
+              </div>`;
+            })
+            .join("")
+        : `<p class="status">Không phát hiện được tư thế nào trong ảnh.</p>`;
+      resultMeta.textContent = `Thời gian xử lý: ${Math.round(data.latency_ms)}ms`;
+      result.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function showResultError(message) {
+      resultCards.innerHTML = "";
+      resultMeta.textContent = "Lỗi: " + message;
+      result.textContent = "";
+    }
 
     // ---- Tabs ----
     const tabCameraBtn = document.getElementById("tabCameraBtn");
@@ -83,18 +139,40 @@
 
     // ---- Upload ảnh tĩnh ----
     const fileInput = document.getElementById("fileInput");
-    const preview = document.getElementById("preview");
+    const uploadCanvas = document.getElementById("uploadCanvas");
+    const uploadCtx = uploadCanvas.getContext("2d");
+
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Không đọc được ảnh")); };
+        img.src = objectUrl;
+      });
+    }
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
-      preview.src = URL.createObjectURL(file);
-      preview.hidden = false;
-      result.textContent = "Đang gọi API...";
+      resultCards.innerHTML = "";
+      resultMeta.textContent = "Đang gọi API...";
       try {
-        result.textContent = JSON.stringify(await callPredict(file), null, 2);
+        const img = await loadImageFile(file);
+        // Vẽ ảnh đúng độ phân giải gốc lên canvas -- box API trả về cũng ở
+        // toạ độ pixel của chính ảnh gốc này, nên không cần quy đổi gì
+        // thêm (khác trường hợp camera phải đồng bộ kích thước video).
+        uploadCanvas.width = img.naturalWidth;
+        uploadCanvas.height = img.naturalHeight;
+        uploadCtx.drawImage(img, 0, 0);
+        uploadCanvas.hidden = false;
+
+        const data = await callPredict(file);
+        uploadCtx.drawImage(img, 0, 0); // vẽ lại ảnh gốc trước khi đè box mới, tránh chồng box cũ nếu upload lại
+        drawDetectionsOnto(uploadCtx, data.detections || []);
+        renderResults(data);
       } catch (err) {
-        result.textContent = "Lỗi: " + err.message;
+        showResultError(err.message);
       }
     });
 
@@ -174,8 +252,8 @@
         );
         if (!blob) return;
         const data = await callPredict(blob);
-        drawDetections(data.detections || []);
-        result.textContent = JSON.stringify(data, null, 2);
+        renderCameraDetections(data.detections || []);
+        renderResults(data);
       } catch (err) {
         camStatus.textContent = "Lỗi gọi API: " + err.message;
       } finally {
@@ -183,22 +261,29 @@
       }
     }
 
-    function drawDetections(detections) {
-      resizeOverlay();
-      ctx.clearRect(0, 0, camOverlay.width, camOverlay.height);
-      ctx.lineWidth = 3;
-      ctx.font = "16px sans-serif";
+    // Dùng chung cho cả canvas overlay camera (trong suốt, đè lên <video>)
+    // lẫn canvas upload (chứa sẵn ảnh, vẽ đè lên) -- không tự clear/resize,
+    // đó là việc của nơi gọi (mỗi nơi có ảnh nền khác nhau phía sau).
+    function drawDetectionsOnto(targetCtx, detections) {
+      targetCtx.lineWidth = 3;
+      targetCtx.font = "16px sans-serif";
       for (const d of detections) {
         const [x1, y1, x2, y2] = d.box;
-        ctx.strokeStyle = d.form_ok === false ? "red" : "limegreen";
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        targetCtx.strokeStyle = d.form_ok === false ? "red" : "limegreen";
+        targetCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
         const label = `${d.pose} (${Math.round(d.confidence * 100)}%)`;
-        ctx.fillStyle = ctx.strokeStyle;
-        ctx.fillText(label, x1 + 4, Math.max(16, y1 - 6));
+        targetCtx.fillStyle = targetCtx.strokeStyle;
+        targetCtx.fillText(label, x1 + 4, Math.max(16, y1 - 6));
         if (d.tips?.length) {
-          ctx.fillText(d.tips[0], x1 + 4, y2 + 16);
+          targetCtx.fillText(d.tips[0], x1 + 4, y2 + 16);
         }
       }
+    }
+
+    function renderCameraDetections(detections) {
+      resizeOverlay();
+      ctx.clearRect(0, 0, camOverlay.width, camOverlay.height);
+      drawDetectionsOnto(ctx, detections);
     }
 
     startCamBtn.addEventListener("click", startCamera);

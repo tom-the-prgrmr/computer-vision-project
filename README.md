@@ -57,13 +57,51 @@ pip install -r requirements.txt
    `src/models/train.py` — không có CLI riêng, chỉ dùng qua notebook)
 3. **Eval / error analysis**: `notebooks/03_evaluation_error_analysis.ipynb`
 4. **Export ONNX**: `notebooks/04_export_onnx.ipynb`
-5. **Serve API**: `uvicorn app.main:app --reload`
-6. **Web demo**: mở `web/index.html` — tab "Camera trực tiếp" (chính, dùng
-   camera điện thoại/iPhone qua `getUserMedia`) hoặc tab "Upload ảnh" (test
-   nhanh). Sửa `API_BASE` trong file nếu API không chạy ở `localhost:8000`.
-   ⚠️ Camera trên điện thoại **chỉ hoạt động qua HTTPS** (hoặc `localhost` lúc
-   dev) — xem ràng buộc HTTPS/CORS trong `docs/REQUIREMENTS.md` mục 7 trước
-   khi deploy.
+5. **Serve API + web demo**: `uvicorn app.main:app --reload` — 1 lệnh duy
+   nhất, phục vụ cả `GET /` (trang demo, mount từ `web/`) lẫn `/predict`
+   cùng process, mở `http://localhost:8000/`. (Cách cũ chạy 2 server tách
+   — `python -m http.server 8080 --directory web` cho web + uvicorn riêng
+   cho API — vẫn dùng được cho local dev nếu muốn, xem
+   `docs/specs/g8-web-demo.md`.)
+6. **Web demo**: tab "Camera trực tiếp" (chính, dùng camera điện
+   thoại/iPhone qua `getUserMedia`) hoặc tab "Upload ảnh" (test nhanh).
+   `API_BASE` trong `web/index.html` tự nhận diện môi trường, không cần sửa
+   tay. ⚠️ Camera trên điện thoại **chỉ hoạt động qua HTTPS** (hoặc
+   `localhost` lúc dev) — xem ràng buộc HTTPS/CORS trong
+   `docs/REQUIREMENTS.md` mục 7.
+
+## Deploy (Render + Cloudflare Pages, free)
+
+Xem đầy đủ trong [`docs/specs/g9-deploy-public.md`](docs/specs/g9-deploy-public.md)
+— lịch sử đổi host 2 lần (HF Spaces → VPS riêng → phương án chính hiện
+tại) đều ghi rõ trong đó. Tóm tắt phương án chính: **backend trên
+[Render](https://render.com/)** (free web service, build thẳng từ
+`Dockerfile`), **frontend tĩnh trên
+[Cloudflare Pages](https://pages.cloudflare.com/)** (free, trỏ vào thư mục
+`web/`) — cả hai không cần thẻ, tự có HTTPS.
+
+1. Track `models/best.onnx` bằng Git LFS (Render build thẳng từ GitHub repo
+   này; `.gitignore` đã có sẵn ngoại lệ `!models/best.onnx` cho đúng 1 file
+   này — không cần tự sửa `.gitignore`):
+   ```bash
+   git lfs install && git lfs track "models/best.onnx"
+   git add .gitattributes models/best.onnx && git commit -m "Track model qua Git LFS" && git push
+   ```
+2. Render: New → Web Service → connect repo này → tự nhận `Dockerfile` →
+   instance **Free** → Deploy. Lấy URL `https://<service>.onrender.com`.
+3. Cloudflare Pages: Create project → connect repo này → build output
+   directory `web`, không cần build command → Deploy. Lấy URL
+   `https://<project>.pages.dev`.
+4. Sửa `BACKEND_URL` trong `web/index.html` thành URL Render ở bước 2,
+   commit + push. Set env `ALLOWED_ORIGINS` trên Render = URL Cloudflare
+   Pages ở bước 3.
+
+⚠️ Render free tier ngủ sau ~15 phút không dùng — mở thử trang trước
+~1 phút để "đánh thức" trước khi demo/quay video, tránh chờ giữa chừng.
+
+Có sẵn phương án thay thế dùng VPS riêng + Caddy (đã build + review xong,
+xem `docker-compose.yml`/`Caddyfile` + chi tiết trong
+`docs/specs/g9-deploy-public.md`) nếu Render free không đủ ổn định.
 
 ## Trạng thái
 

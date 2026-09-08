@@ -20,6 +20,13 @@ models/*
 *.onnx
 *.engine
 
+# Ngoại lệ: models/best.onnx được track qua Git LFS (không phải commit
+# thẳng binary vào git thường) để Render build được model thật từ chính
+# repo GitHub này — xem docs/specs/g9-deploy-public.md T9.4. Các file .pt
+# checkpoint train và các bản .onnx thử nghiệm khác vẫn bị ignore bình
+# thường (chỉ 1 file cụ thể này được ngoại lệ).
+!models/best.onnx
+
 # Env / secrets
 .env
 *.key

@@ -1,0 +1,6 @@
+{$DOMAIN} {
+	# Caddy tự xin + gia hạn chứng chỉ Let's Encrypt cho {$DOMAIN} — cần DNS
+	# domain đã trỏ về đúng IP VPS này, và cổng 80/443 mở ra internet (Let's
+	# Encrypt xác thực qua HTTP-01 trên cổng 80 trước khi cấp cert HTTPS).
+	reverse_proxy app:8000
+}

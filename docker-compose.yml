@@ -1,0 +1,40 @@
+# Deploy trên VPS riêng — xem docs/specs/g9-deploy-public.md.
+# 2 service: `app` (FastAPI + ONNX + MediaPipe, build từ Dockerfile) đứng
+# sau `caddy` (reverse proxy, tự xin/renew chứng chỉ HTTPS thật qua Let's
+# Encrypt dựa vào DOMAIN — không tự expose port 8000 ra ngoài, chỉ Caddy mới
+# expose 80/443).
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      # Đúng domain thật (xem Caddyfile). Trang demo gọi /predict cùng
+      # origin nên trình duyệt tự gửi header Origin đúng domain này — khai
+      # rõ ALLOWED_ORIGINS để siết CORS, phòng khi sau này tách frontend ra
+      # domain khác.
+      ALLOWED_ORIGINS: "https://${DOMAIN}"
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      # Caddyfile đọc {$DOMAIN} từ chính env này của container caddy (không
+      # phải cú pháp interpolation ${...} của docker-compose) để tự xin
+      # chứng chỉ HTTPS đúng domain qua Let's Encrypt lúc khởi động.
+      DOMAIN: "${DOMAIN}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    command: caddy run --config /etc/caddyfile --adapter caddyfile
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

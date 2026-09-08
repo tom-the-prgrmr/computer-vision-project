@@ -74,8 +74,19 @@
   </details>
 
   <script>
-    // Sửa dòng này khi deploy: trỏ đúng domain HTTPS của backend FastAPI.
-    const API_BASE = "http://localhost:8000";
+    // Deploy tách frontend/backend (vd trang này host tĩnh trên Cloudflare
+    // Pages, API chạy riêng trên Render) -> điền đúng URL backend thật vào
+    // đây trước khi deploy (xem docs/specs/g9-deploy-public.md). Để trống
+    // ("") nếu frontend + backend cùng origin (backend tự serve trang này
+    // qua app/main.py mount static — local `uvicorn --reload`, hoặc mở
+    // thẳng URL Render thay vì qua Cloudflare Pages).
+    const BACKEND_URL = ""; // vd: "https://yoga-pose-api.onrender.com"
+
+    // Tự nhận diện riêng cho dev local (trang mở qua
+    // `python -m http.server 8080`, API chạy riêng ở :8000, xem
+    // docs/specs/g8-web-demo.md) -> trỏ thẳng localhost:8000, không cần
+    // sửa BACKEND_URL ở trên cho trường hợp này.
+    const API_BASE = location.port === "8080" ? "http://localhost:8000" : BACKEND_URL;
     document.getElementById("apiUrlLabel").textContent = API_BASE + "/predict";
 
     const result = document.getElementById("result");

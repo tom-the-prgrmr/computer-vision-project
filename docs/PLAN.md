@@ -80,11 +80,11 @@ File: `web/index.html`
 - [x] ~~T8.4 Fix lỗi lệch toạ độ overlay~~ — không áp dụng: T8.3 thật không phát hiện bug, review tĩnh trước đó đúng
 
 ## Giai đoạn 9 — Deploy public (12/9)
-- [ ] T9.1 Chốt host — **mặc định: Hugging Face Spaces (Docker Space)**, free tier, có HTTPS sẵn (giải quyết luôn ràng buộc HTTPS cho camera iPhone ở §7 REQUIREMENTS, khỏi tự set up Caddy/Let's Encrypt); CPU đủ cho ONNX Runtime ở mức demo. Chỉ đổi sang VM GPU thuê + Caddy nếu latency CPU không chấp nhận được
-- [ ] T9.1b *(optional)* Upload `best.onnx` lên Hugging Face Hub — link tải public gọn hơn cho README, thay vì xin quyền Google Drive
-- [ ] T9.2 Set up HTTPS thật (bỏ qua nếu dùng HF Spaces — đã có sẵn)
-- [ ] T9.3 Sửa `API_BASE` trong `web/index.html`, siết `allow_origins` trong `app/main.py` về đúng domain frontend
-- [ ] T9.4 Deploy backend + serve `web/index.html`
+- [x] T9.1 Chốt host — đổi 2 lần (HF Spaces bắt trả phí → VPS riêng → **Render (backend) + Cloudflare Pages (frontend)**, đều free không cần thẻ, xem lịch sử trong docs/specs/g9-deploy-public.md). VPS+Caddy vẫn giữ trong repo làm phương án thay thế đã build xong.
+- [ ] ~~T9.1b Upload `best.onnx` lên HF Hub~~ — bỏ qua (optional): dùng Git LFS để Render build được model từ repo, không cần model repo riêng
+- [x] T9.2 Set up HTTPS thật — không cần tự làm, Render + Cloudflare Pages tự có HTTPS sẵn (phương án VPS thay thế dùng Caddy nếu cần)
+- [x] T9.3 Sửa `web/index.html` hỗ trợ tách origin FE/BE (`BACKEND_URL`), CORS trong `app/main.py` qua env `ALLOWED_ORIGINS` (không đổi từ trước)
+- [ ] T9.4 Deploy backend (Render) + frontend (Cloudflare Pages) — *code chuẩn bị xong, xem docs/specs/g9-deploy-public.md; phần tạo tài khoản + deploy thật cần bạn tự làm*
 - [ ] T9.5 Test camera trên **iPhone thật** qua URL HTTPS công khai — đây là điều kiện để coi FR7 hoàn thành
 
 ## Giai đoạn 10 — Tài liệu & Slide (13/9 – 14/9)

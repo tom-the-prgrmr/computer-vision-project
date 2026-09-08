@@ -4,14 +4,16 @@ torch>=2.2
 torchvision>=0.17
 
 # Pose scoring layer (pretrained, not trained by us)
-# Pin <1.0: mediapipe 1.0 dropped the classic `mediapipe.solutions.pose`
-# API in favor of a Tasks API that needs a separately-downloaded .task
-# model asset -- angle_rules.py/calibrate_pose_rules.py use the classic
-# API. Range (not ==0.10.21 exactly) because the exact patch build
-# available differs per platform/Python version (Colab vs local Windows);
-# every 0.10.x release still has `mediapipe.solutions.pose.Pose`, only
-# 1.0+ dropped it.
-mediapipe>=0.10,<1.0
+# Pin ==0.10.21 exactly, NOT a >=0.10,<1.0 range: the classic
+# `mediapipe.solutions.pose` API that angle_rules.py/landmark_extraction.py
+# use started disappearing from the *0.10.x* line itself, well before 1.0 --
+# confirmed 0.10.35 (macOS arm64, Python 3.11) ships a mediapipe package
+# with no `solutions` submodule at all (`mp.solutions` -> AttributeError),
+# while 0.10.21 still has it (`mediapipe.python.solutions.pose.Pose`). So
+# "every 0.10.x has solutions" is false; only pin to a build verified to
+# have it. If Colab/Windows can't resolve this exact version, re-verify
+# `hasattr(mediapipe, "solutions")` before loosening the pin again.
+mediapipe==0.10.21
 
 # Data
 roboflow>=1.1            # download bbox-annotated yoga pose dataset

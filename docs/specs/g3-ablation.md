@@ -1,7 +1,7 @@
 # Spec — G3. Ablation (rubric: mục 3 — Method & Training, phần "≥1 ablation")
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 3 (`T3.1`–`T3.4`)
-**Status:** implemented <!-- code xong — chạy thật trên Colab + T3.4 kết luận còn deferred, xem Implementation notes -->
+**Status:** implemented
 
 ## Mục tiêu
 
@@ -147,7 +147,23 @@ set.
     `last_epoch_stats()`/bảng so sánh trong `.venv` — logic đọc cột đúng,
     `df.columns.str.strip()` xử lý đúng quirk khoảng trắng. Không chạy
     `train()` thật (cần GPU + dataset thật).
-- **T3.1–T3.4 (chạy thật trên Colab + kết luận) — deferred.** Cần bạn tự
-  chạy phần ablation mới trong `02_train_detector.ipynb` trên Colab, xem
-  "Cách bạn tự test" ở trên, rồi gửi lại số liệu để mình điền T3.4 +
-  `docs/problem_statement.md`.
+- **T3.1–T3.4 — done.** Chạy thật trên Colab (T4 GPU). Kết quả:
+
+  | Run | mAP@0.5 | mAP@0.5:0.95 | Thời gian train (s) |
+  |---|---|---|---|
+  | ON (baseline) | 0.9922 | 0.8352 | 913.2 |
+  | OFF (no aug) | 0.9754 | 0.8558 | 672.1 |
+
+  Trái chiều: ON thắng mAP@0.5, OFF thắng mAP@0.5:0.95 + nhanh hơn ~26%.
+  Không bên nào vượt trội rõ rệt → **chọn ON làm chính thức** (lý do tổng
+  quát hoá cho ảnh/video thật ngoài dataset, theo tiêu chí đã chốt sẵn ở
+  trên). Ghi vào notebook (cell T3.4) và `docs/problem_statement.md`.
+
+  Lưu ý phát sinh: mAP baseline ở lần chạy lại này (0.9922/0.8352) lệch
+  nhẹ so với con số train lần đầu ở `docs/specs/g2-baseline-training.md`
+  (0.9923/0.8435) dù cùng `seed=42`, `epochs=50` — vì `exist_ok=True`
+  (thêm ở lần fix trước) khiến cell baseline **train lại từ đầu** thay vì
+  chỉ đọc kết quả cũ, và YOLO/cuDNN không hoàn toàn deterministic giữa các
+  lần train trên GPU (không set `deterministic=True`). Chênh lệch ở mức
+  nhiễu bình thường (~0.01 mAP), không phải lỗi — không cần xử lý, chỉ ghi
+  nhận như 1 giới hạn reproducibility đã biết trước.

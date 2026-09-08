@@ -115,7 +115,7 @@ khi xem ảnh T1.4 — ảnh gốc đã đủ đa dạng góc chụp.
 ## Training baseline (Giai đoạn 2)
 
 `yolov8n.pt`, `seed=42`, `epochs=50`, `imgsz=640`, augmentation như trên.
-Kết quả (Colab, T4 GPU): **mAP@0.5 = 0.9923, mAP@0.5:0.95 = 0.8435**. Rất
+Kết quả (Colab, T4 GPU): **mAP@0.5 = 0.9922, mAP@0.5:0.95 = 0.8352**. Rất
 cao cho baseline — dataset v1 tương đối "dễ" (5 lớp phân biệt rõ hình dạng
 tư thế, học viên thường chiếm phần lớn khung hình).
 
@@ -128,8 +128,17 @@ perspective, mixup, copy_paste, erasing), giữ nguyên `model`/`seed`/
 
 | Run | mAP@0.5 | mAP@0.5:0.95 | Thời gian train (s) |
 |---|---|---|---|
-| ON (baseline) | 0.9923 | 0.8435 | *(chưa có — chờ chạy)* |
-| OFF (no aug) | *(chưa có — chờ chạy)* | *(chưa có — chờ chạy)* | *(chưa có — chờ chạy)* |
+| ON (baseline) | 0.9922 | 0.8352 | 913.2 |
+| OFF (no aug) | 0.9754 | 0.8558 | 672.1 |
 
-**Kết luận:** *(điền sau khi chạy `notebooks/02_train_detector.ipynb` phần
-T3.1-T3.4 trên Colab và gửi lại số liệu thật)*.
+**Kết luận:** Kết quả trái chiều — ON thắng mAP@0.5 (+1.7pp), OFF thắng
+mAP@0.5:0.95 (+2.1pp) và train nhanh hơn ~26%. Không bên nào vượt trội rõ
+rệt, nên **chọn augmentation ON làm config chính thức** — lý do: mục tiêu
+triển khai thực tế là ảnh/video thật ngoài dataset (camera điện thoại, góc
+chụp/ánh sáng đa dạng hơn tập train), augmentation giúp tổng quát hoá tốt
+hơn dù không thắng tuyệt đối trên test set cùng phân bố. Dùng config này
+cho Giai đoạn 5 (retrain sau cải tiến).
+
+*(mAP baseline ở bảng này lệch nhẹ so với con số train lần đầu — 0.9923/
+0.8435 — dù cùng `seed=42`, do YOLO/cuDNN không hoàn toàn deterministic
+giữa các lần train trên GPU; chênh lệch ở mức nhiễu bình thường.)*

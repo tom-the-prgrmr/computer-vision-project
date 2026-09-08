@@ -168,3 +168,11 @@ hội tụ (vẫn giảm mạnh ở epoch cuối), có thể cần bàn lại t�
 **Giai đoạn 2 hoàn tất** — tất cả T2.1–T2.5 đã tick trong `docs/PLAN.md`.
 mAP baseline dùng làm mốc so sánh cho Giai đoạn 3 (ablation) và Giai đoạn 5
 (feedback loop retrain).
+
+**Cập nhật (Giai đoạn 3):** khi chạy lại cell baseline trong cùng session
+với ablation (`exist_ok=True` khiến nó train lại từ đầu thay vì chỉ đọc
+kết quả cũ), mAP ra hơi khác: 0.9922/0.8352 thay vì 0.9923/0.8435 ban đầu
+— cùng seed nhưng YOLO/cuDNN không hoàn toàn deterministic giữa các lần
+train GPU. Xem `docs/specs/g3-ablation.md` — số dùng chính thức trong
+`docs/problem_statement.md` là bản chạy lại này (đo cùng session, cùng
+điều kiện với variant OFF nên so sánh công bằng hơn).

@@ -34,10 +34,10 @@ File: `src/models/train.py`, `notebooks/02_train_detector.ipynb`
 - [x] T2.5 Ghi mAP@0.5, mAP@0.5:0.95 baseline vào markdown cell trong notebook
 
 ## Giai đoạn 3 — Ablation (2/9 – 3/9)
-- [ ] T3.1 Chọn biến ablation: **augmentation on vs off** (rẻ nhất, chạy 2 lần là đủ)
-- [ ] T3.2 Train variant thứ 2, giữ nguyên seed/epochs/model, chỉ đổi biến đã chọn
-- [ ] T3.3 Lập bảng so sánh baseline vs variant (mAP, thời gian train) trong notebook
-- [ ] T3.4 Chọn config thắng làm "chính thức", ghi lý do vào `docs/problem_statement.md`
+- [x] T3.1 Chọn biến ablation: **augmentation on vs off** (rẻ nhất, chạy 2 lần là đủ)
+- [x] T3.2 Train variant thứ 2, giữ nguyên seed/epochs/model, chỉ đổi biến đã chọn
+- [x] T3.3 Lập bảng so sánh baseline vs variant (mAP, thời gian train) trong notebook
+- [x] T3.4 Chọn config thắng làm "chính thức", ghi lý do vào `docs/problem_statement.md`
 
 ## Giai đoạn 4 — Evaluation & Error Analysis (4/9 – 5/9)
 File: `src/evaluation/metrics.py`, `notebooks/03_evaluation_error_analysis.ipynb`

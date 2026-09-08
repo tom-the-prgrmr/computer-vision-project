@@ -151,3 +151,15 @@ implement, không phải lựa chọn cần bạn quyết trước.
   `03_evaluation_error_analysis.ipynb` trên Colab, xem "Cách bạn tự test"
   ở trên, rồi gửi lại quan sát (cặp lớp hay nhầm nếu có, nhận xét ảnh
   EigenCAM) để mình viết tóm tắt T4.5.
+
+- **Lỗi phát sinh khi chạy thật (đã sửa):** `cam(tensor)` báo
+  `TypeError: BaseCAM.__call__() missing 1 required positional argument:
+  'targets'` — bản `grad-cam` cài trên Colab (1.5.7, không có upper bound
+  trong `requirements.txt`) khai báo `targets: Optional[List[Module]]`
+  **không có default**, khác với API cũ hơn dùng `targets=None` mặc định.
+  Đã kiểm tra source thật của `EigenCAM`/`BaseCAM` (cài local trong
+  `.venv`) xác nhận `EigenCAM` set `uses_gradients=False` và
+  `get_cam_image()` chỉ dùng `activations` (bỏ qua `targets` hoàn toàn) —
+  nên truyền tường minh `targets=None` là an toàn, không ảnh hưởng kết
+  quả. Sửa `eigencam_overlay()` trong notebook: `cam(tensor,
+  targets=None)`.

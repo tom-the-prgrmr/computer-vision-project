@@ -167,3 +167,32 @@ oversampling nhắm đúng cặp lớp hay nhầm) **không áp dụng được*
 đoạn 5 cần chọn hướng khác (vd mở rộng sang v2 nhiều lớp hơn để có bài
 toán thật sự khó hơn, hoặc test model trên ảnh/video ngoài dataset để tìm
 lỗi thực tế thay vì trên test set cùng phân bố).
+
+## Feedback loop cải tiến (Giai đoạn 5)
+
+Vì Giai đoạn 4 không tìm ra cặp lớp bị nhầm nào, hướng cải thiện chuyển
+sang đo lỗi thật trên ảnh **ngoài phân bố dataset Roboflow** (OOD) — xem
+`docs/specs/g5-feedback-loop.md`.
+
+**Tập OOD:** 18 ảnh (6/lớp × `downdog`→`downward`, `plank`, `tree`) từ
+[niharika41298/yoga-poses-dataset](https://www.kaggle.com/datasets/niharika41298/yoga-poses-dataset)
+trên Kaggle — khác hoàn toàn nguồn Roboflow (khác số ảnh, khác 2 lớp
+`bridge`/`shoulderstand`, khác phong cách chụp/background).
+
+**Kết quả (chạy thật trên Colab, model `yolov8n_v1_baseline`):**
+OOD accuracy = **17/18 = 94.4%**. Đúng 1 lỗi: `plank` bị đoán thành
+`tree` (conf 0.82) trên 1 ảnh mà tư thế trong ảnh không giống plank kinh
+điển — khả năng cao là nhãn gốc của dataset Kaggle không chuẩn, không
+phải lỗi hệ thống của model.
+
+*(Lưu ý: lần chạy đầu trên Colab báo nhầm 0/18 = 0.0% do 1 bug trong code
+so sánh — `result.names` của model có tiền tố `"yoga-pose "` chưa được bỏ
+trước khi so với nhãn thật. Đã sửa và verify lại bằng cách đối chiếu tay
+log gốc + smoke test logic, không phải số liệu suy đoán.)*
+
+**Kết luận:** 94.4% vượt ngưỡng robust đã chốt trước (≥90%), và lỗi duy
+nhất không khớp pattern lỗi hệ thống nào (không do ảnh tối/người nhỏ/nền
+lộn xộn/mờ) → **không retrain**. Baseline (`yolov8n_v1_baseline`, config
+ON từ Giai đoạn 3) đã đủ robust trên mức OOD nhỏ đã kiểm tra. Giới hạn:
+tập OOD chỉ 18 ảnh, 3/5 lớp — không phải benchmark thống kê chắc chắn,
+chỉ đủ làm bằng chứng định tính cho quyết định này.

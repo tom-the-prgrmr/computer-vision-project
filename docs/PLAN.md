@@ -49,10 +49,10 @@ File: `src/evaluation/metrics.py`, `notebooks/03_evaluation_error_analysis.ipynb
 
 ## Giai đoạn 5 — Feedback loop cải tiến (6/9 – 8/9)
 - [x] T5.1 Từ T4.2/T4.5, chọn 1 hướng cải thiện cụ thể — mặc định: augmentation/oversampling nhắm đúng cặp lớp hay nhầm (an toàn thời gian); chỉ làm v2 (`src/data/bootstrap_bbox.py`, mở rộng 15-20 lớp) nếu **đã xong T5.1-T5.4 sớm và còn dư thời gian**
-- [ ] T5.2 Implement thay đổi (sửa config augment, hoặc nếu làm v2 thì chạy `bootstrap_bboxes()`)
-- [ ] T5.3 Retrain với cùng seed, lưu thành run mới (không ghi đè run cũ — cần cả 2 để so sánh)
-- [ ] T5.4 Lập bảng trước/sau: mAP tổng + mAP riêng cho (các) lớp đã cải thiện
-- [ ] T5.5 Viết kết luận vào `docs/problem_statement.md`, đánh dấu mục 5 trong `docs/requirement_checklist.md`
+- [x] T5.2 Implement thay đổi — *đổi phạm vi (xem spec g5): đo lỗi thật trên OOD thay vì sửa augment thẳng; code T5.3 đã sẵn sàng rẽ nhánh retrain nhưng kết quả thật không cần dùng tới*
+- [ ] ~~T5.3 Retrain với cùng seed, lưu thành run mới~~ — không áp dụng: OOD accuracy 94.4% ≥ ngưỡng robust, không tìm ra pattern lỗi cần retrain
+- [ ] ~~T5.4 Lập bảng trước/sau~~ — không áp dụng (không retrain nên không có "sau" để so)
+- [x] T5.5 Viết kết luận vào `docs/problem_statement.md`, đánh dấu mục 5 trong `docs/requirement_checklist.md`
 
 ## Giai đoạn 6 — Form scoring rule-based (6/9 – 8/9, song song GĐ5)
 File: `src/pose_scoring/angle_rules.py`

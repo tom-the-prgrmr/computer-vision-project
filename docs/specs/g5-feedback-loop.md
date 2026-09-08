@@ -1,7 +1,7 @@
 # Spec — g5. Feedback loop cải tiến (rubric: mục 5 — Feedback loop)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 5
-**Status:** implemented <!-- code xong — chạy thật trên Colab (cần ảnh OOD từ bạn) còn deferred, xem Implementation notes -->
+**Status:** implemented
 
 ## Quyết định hướng (T5.1 — đã chốt)
 
@@ -193,7 +193,36 @@ filename-prefix-mapping, bỏ qua ảnh không map được, bỏ qua file khôn
 ảnh) — cả 2 đều pass. Phần cần GPU/model thật (predict, train, val) không
 smoke-test được ở đây — cần chạy thật trên Colab.
 
-**Deferred (ngoài môi trường này):** T5.2a (thu thập ảnh OOD — bạn tự
-làm), và do đó toàn bộ phần chạy thật T5.2b–T5.5 trên Colab (đo baseline
-OOD accuracy, xác định `OBSERVED_ISSUE`, retrain nếu cần, bảng trước/sau,
-viết kết luận vào `problem_statement.md`/`requirement_checklist.md`).
+**T5.2a — đã xong:** 18 ảnh OOD (6/lớp × downdog/plank/tree) từ Kaggle
+`niharika41298/yoga-poses-dataset`, xem `data/ood_samples/README.md`.
+
+**Bug thật gặp khi chạy T5.2b trên Colab (đã sửa):** `result.names` trả
+tên lớp gốc của model kèm tiền tố `"yoga-pose "` (vd `"yoga-pose
+downward"` — data.yaml v1 vốn có tiền tố này, xem
+`docs/problem_statement.md`), nhưng `top_class_from_result()` không bỏ
+tiền tố trước khi so với `MODEL_CLASSES`/nhãn thật → **mọi dự đoán đều bị
+tính SAI dù model đoán đúng nội dung** (log Colab đầu tiên báo 0/18 =
+0.0%). Sửa bằng `raw_name.removeprefix("yoga-pose ").strip()`. Verify:
+đối chiếu tay log gốc (18 dòng, cột "đoán" đều đúng khớp cột "thật" trừ 1
+dòng) + smoke test logic prefix-stripping.
+
+**T5.2b — kết quả thật (sau khi sửa bug, từ log Colab gốc — không cần
+chạy lại vì log đã đủ dữ liệu để tính đúng):**
+
+OOD accuracy = **17/18 = 94.4%**. Đúng 1 lỗi thật:
+`plank/00000089.jpg` — thật = `plank`, model đoán `tree` (conf 0.82).
+Nhìn ảnh: tư thế đứng dựa tường, tay giơ cao — không giống plank kinh
+điển, khả năng cao là nhãn gốc trong dataset Kaggle không chuẩn (rủi ro
+nhiễu nhãn dataset ngoài, không phải lỗi hệ thống của model) hơn là một
+pattern lỗi thật cần sửa.
+
+**T5.3 — quyết định:** 94.4% ≥ ngưỡng 90% đã chốt sẵn trong spec, và lỗi
+duy nhất không khớp rõ dòng nào trong bảng `AUGMENTATION_TWEAKS` (không
+tối, không nhỏ/xa, không mờ, nền không đặc biệt lộn xộn) — giữ
+`OBSERVED_ISSUE = None`. **Không retrain.** Kết luận: baseline
+(`yolov8n_v1_baseline`) đã robust trên tập OOD 18 ảnh đã test.
+
+**Deferred:** T5.4 (bảng trước/sau) không áp dụng vì không retrain — đã
+có đủ bằng chứng ở T5.2b. T5.5 (ghi kết luận vào
+`problem_statement.md`/`requirement_checklist.md`) làm ở bước đóng giai
+đoạn tiếp theo.

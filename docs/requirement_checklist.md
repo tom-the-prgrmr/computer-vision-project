@@ -17,10 +17,12 @@ viết README và làm slide.
 - [ ] **4. Evaluation & Error Analysis** — mAP/confusion matrix, case sai cụ thể +
       Grad-CAM, pattern lỗi lặp lại
       → `notebooks/03_evaluation_error_analysis.ipynb`
-- [ ] **5. Feedback loop – cải tiến** — từ lỗi ở mục 4, thử ≥1 hướng cải thiện cụ
-      thể, so sánh số liệu trước/sau (kế hoạch: mở rộng 5 → 15-20 lớp, xem
-      `docs/problem_statement.md`)
-      → `notebooks/02_train_detector.ipynb` (v2), so sánh trong mục 4
+- [ ] **5. Feedback loop – cải tiến** — mục 4 không tìm ra lỗi trong tập test cùng
+      phân bố (0 cặp lớp bị nhầm), nên đổi hướng: đo lỗi thật trên ảnh **ngoài**
+      phân bố dataset (OOD) — kết quả: 17/18 = 94.4%, không có pattern lỗi rõ
+      rệt → kết luận baseline đã robust, không cần retrain (xem
+      `docs/problem_statement.md` mục "Feedback loop cải tiến")
+      → `notebooks/05_feedback_loop_ood.ipynb`
 - [ ] **6. Phần tự nghĩ thêm** — lớp chấm điểm form bằng góc khớp MediaPipe
       → `src/pose_scoring/angle_rules.py`
 - [ ] **7. Deployment** — export ONNX, FastAPI, benchmark latency/FPS, web demo

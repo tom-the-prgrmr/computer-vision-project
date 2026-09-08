@@ -1,7 +1,7 @@
 # Spec — g8. Web demo local (rubric: mục 7 — Deployment, phần frontend)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 8
-**Status:** implemented <!-- T8.1/T8.2 verify thật xong; T8.3 camera thật + T8.4 (nếu có bug) cần bạn tự làm, xem Implementation notes -->
+**Status:** implemented <!-- T8.1-T8.4 xong hết, xem Implementation notes -->
 
 ## Bối cảnh quan trọng
 
@@ -152,6 +152,12 @@ console (chỉ có 1 warning 404 `favicon.ico`, vô hại, không phải bug).
 
 **T8.4:** không tìm ra bug qua review tĩnh + phần test Playwright test
 được — để trống, chỉ sửa nếu bạn báo có lệch thật khi tự test T8.3.
+
+**Xác nhận cuối từ bạn (webcam thật):** T8.3 test trên máy có camera —
+hình ảnh trực tiếp hiển thị đúng, box + tên tư thế + tip vẽ đúng vị trí lên
+người trong khung hình, không lệch/trôi. Khớp đúng dự đoán từ review tĩnh
+toạ độ overlay ở mục "Rủi ro" — T8.4 không áp dụng (không có bug để sửa).
+Giai đoạn 8 hoàn tất toàn bộ (T8.1-T8.4).
 
 **Cải tiến thêm theo yêu cầu (ngoài PLAN.md, hợp lý nên làm cùng lúc):**
 1. Tab Upload trước đây chỉ hiện `<img>` gốc + JSON text — giờ vẽ box +

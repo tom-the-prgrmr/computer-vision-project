@@ -76,8 +76,8 @@ File: `notebooks/04_export_onnx.ipynb`, `app/service.py`, `app/controller.py`
 File: `web/index.html`
 - [x] T8.1 `uvicorn app.main:app --reload` — chạy thật (port 8000), `/health` OK
 - [x] T8.2 Test tab "Upload ảnh" với API thật — Playwright test thật, kết quả khớp curl Giai đoạn 7 (tree, conf 0.92, form_ok=true)
-- [ ] T8.3 Test tab "Camera trực tiếp" trên webcam máy dev qua `localhost` (không cần HTTPS ở bước này) — *nhánh lỗi đã verify (không crash), phần camera thật cần bạn tự test (server đang chạy sẵn, mở `http://localhost:8080`)*
-- [ ] T8.4 Fix lỗi lệch toạ độ overlay canvas vs kích thước video hiển thị nếu có (lỗi thường gặp) — *review tĩnh không thấy bug, chờ xác nhận từ T8.3 thật*
+- [x] T8.3 Test tab "Camera trực tiếp" trên webcam máy dev qua `localhost` (không cần HTTPS ở bước này) — xác nhận thật trên máy có webcam: hình ảnh trực tiếp + box/tip vẽ đúng vị trí, không lệch
+- [x] ~~T8.4 Fix lỗi lệch toạ độ overlay~~ — không áp dụng: T8.3 thật không phát hiện bug, review tĩnh trước đó đúng
 
 ## Giai đoạn 9 — Deploy public (12/9)
 - [ ] T9.1 Chốt host — **mặc định: Hugging Face Spaces (Docker Space)**, free tier, có HTTPS sẵn (giải quyết luôn ràng buộc HTTPS cho camera iPhone ở §7 REQUIREMENTS, khỏi tự set up Caddy/Let's Encrypt); CPU đủ cho ONNX Runtime ở mức demo. Chỉ đổi sang VM GPU thuê + Caddy nếu latency CPU không chấp nhận được

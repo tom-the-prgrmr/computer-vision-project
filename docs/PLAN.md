@@ -56,11 +56,11 @@ File: `src/evaluation/metrics.py`, `notebooks/03_evaluation_error_analysis.ipynb
 
 ## Giai đoạn 6 — Form scoring rule-based (6/9 – 8/9, song song GĐ5)
 File: `src/pose_scoring/angle_rules.py`
-- [ ] T6.1 Thu thập 2-3 ảnh/frame "form đúng" mỗi tư thế (tự chụp hoặc chọn lọc từ dataset)
-- [ ] T6.2 Chạy MediaPipe Pose trên ảnh mẫu, in góc khớp thật ra để hiệu chỉnh `min_deg`/`max_deg` trong `POSE_RULES` (thay placeholder hiện tại)
-- [ ] T6.3 Implement `score_pose()`: với mỗi `AngleRange` của `POSE_RULES[pose_class]`, tính góc qua `joint_angle()`, so ngưỡng, gom `issues`
-- [ ] T6.4 Test thủ công: chạy `score_pose()` trên 2 ảnh đúng + 2 ảnh sai mỗi tư thế, xác nhận output hợp lý bằng mắt
-- [ ] T6.5 Xử lý pose ngoài `POSE_RULES` (chưa hiệu chỉnh) — trả `ok=True`, `issues=[]` thay vì crash
+- [x] T6.1 Thu thập 2-3 ảnh/frame "form đúng" mỗi tư thế (tự chụp hoặc chọn lọc từ dataset)
+- [x] T6.2 Chạy MediaPipe Pose trên ảnh mẫu, in góc khớp thật ra để hiệu chỉnh `min_deg`/`max_deg` trong `POSE_RULES` (thay placeholder hiện tại)
+- [x] T6.3 Implement `score_pose()`: với mỗi `AngleRange` của `POSE_RULES[pose_class]`, tính góc qua `joint_angle()`, so ngưỡng, gom `issues`
+- [x] T6.4 Test thủ công — *đổi phạm vi (xem spec g6): 3 ảnh đúng/tư thế (thay vì 2) + landmark tổng hợp lệch góc thay "2 ảnh sai" (dataset không có ảnh form-sai gắn nhãn sẵn)*
+- [x] T6.5 Xử lý pose ngoài `POSE_RULES` (chưa hiệu chỉnh) — trả `ok=True`, `issues=[]` thay vì crash
 
 ## Giai đoạn 7 — Export & Backend (9/9 – 10/9)
 File: `notebooks/04_export_onnx.ipynb`, `app/service.py`, `app/controller.py`

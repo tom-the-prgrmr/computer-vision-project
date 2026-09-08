@@ -4,7 +4,11 @@ torch>=2.2
 torchvision>=0.17
 
 # Pose scoring layer (pretrained, not trained by us)
-mediapipe>=0.10
+# Pin <1.0: mediapipe 1.0 dropped the classic `mediapipe.solutions.pose`
+# API in favor of a Tasks API that needs a separately-downloaded .task
+# model asset -- angle_rules.py/calibrate_pose_rules.py use the classic
+# API. 0.10.21 confirmed to still have `mediapipe.solutions.pose.Pose`.
+mediapipe==0.10.21
 
 # Data
 roboflow>=1.1            # download bbox-annotated yoga pose dataset

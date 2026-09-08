@@ -23,8 +23,10 @@ viết README và làm slide.
       rệt → kết luận baseline đã robust, không cần retrain (xem
       `docs/problem_statement.md` mục "Feedback loop cải tiến")
       → `notebooks/05_feedback_loop_ood.ipynb`
-- [ ] **6. Phần tự nghĩ thêm** — lớp chấm điểm form bằng góc khớp MediaPipe
-      → `src/pose_scoring/angle_rules.py`
+- [ ] **6. Phần tự nghĩ thêm** — lớp chấm điểm form bằng góc khớp MediaPipe,
+      hiệu chỉnh ngưỡng bằng số đo thật trên 15 ảnh mẫu (5 lớp v1), test
+      14/15 ảnh đúng form + 5/5 case tổng hợp lệch góc
+      → `src/pose_scoring/angle_rules.py`, `scripts/calibrate_pose_rules.py`
 - [ ] **7. Deployment** — export ONNX, FastAPI, benchmark latency/FPS, web demo
       **xử lý video** (không chỉ ảnh đơn — xem "Xử lý video" trong
       `docs/problem_statement.md`)

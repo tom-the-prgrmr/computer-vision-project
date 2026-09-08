@@ -43,7 +43,8 @@ def part1_real_images() -> None:
             class_dir = SAMPLES_ROOT / pose_class
             for image_path in sorted(class_dir.glob("*.jpg")) + sorted(class_dir.glob("*.png")):
                 image_bgr = cv2.imread(str(image_path))
-                landmarks_px = extract_landmarks_px(image_bgr, pose) if image_bgr is not None else None
+                image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB) if image_bgr is not None else None
+                landmarks_px = extract_landmarks_px(image_rgb, pose) if image_rgb is not None else None
                 if landmarks_px is None:
                     print(f"  {pose_class}/{image_path.name}: KHÔNG detect được người -- bỏ qua")
                     continue

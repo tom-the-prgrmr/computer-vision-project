@@ -27,9 +27,10 @@ viết README và làm slide.
       hiệu chỉnh ngưỡng bằng số đo thật trên 15 ảnh mẫu (5 lớp v1), test
       14/15 ảnh đúng form + 5/5 case tổng hợp lệch góc
       → `src/pose_scoring/angle_rules.py`, `scripts/calibrate_pose_rules.py`
-- [ ] **7. Deployment** — export ONNX, FastAPI, benchmark latency/FPS, web demo
-      **xử lý video** (không chỉ ảnh đơn — xem "Xử lý video" trong
-      `docs/problem_statement.md`)
+- [ ] **7. Deployment** — export ONNX, FastAPI (`app/service.py` implement xong,
+      smoke test qua TestClient pass), benchmark latency/FPS (cần chạy
+      Colab), web demo **xử lý video** (không chỉ ảnh đơn — xem "Xử lý
+      video" trong `docs/problem_statement.md`)
       → `notebooks/04_export_onnx.ipynb`, `app/`, `web/`
 
 ## Sản phẩm nộp

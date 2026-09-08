@@ -38,7 +38,8 @@ def main() -> None:
             angles_by_joint: dict[str, list[float]] = {j: [] for j in joints}
             for image_path in image_paths:
                 image_bgr = cv2.imread(str(image_path))
-                landmarks_px = extract_landmarks_px(image_bgr, pose) if image_bgr is not None else None
+                image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB) if image_bgr is not None else None
+                landmarks_px = extract_landmarks_px(image_rgb, pose) if image_rgb is not None else None
                 if landmarks_px is None:
                     print(f"  {image_path.name}: KHÔNG detect được người -- bỏ qua")
                     continue

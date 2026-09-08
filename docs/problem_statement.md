@@ -196,3 +196,36 @@ lộn xộn/mờ) → **không retrain**. Baseline (`yolov8n_v1_baseline`, confi
 ON từ Giai đoạn 3) đã đủ robust trên mức OOD nhỏ đã kiểm tra. Giới hạn:
 tập OOD chỉ 18 ảnh, 3/5 lớp — không phải benchmark thống kê chắc chắn,
 chỉ đủ làm bằng chứng định tính cho quyết định này.
+
+## Export & Backend (Giai đoạn 7)
+
+Export `yolov8n_v1_baseline` (config ON, model tốt nhất vì Giai đoạn 5
+không retrain) sang ONNX, benchmark latency, wire vào `app/service.py` —
+xem `docs/specs/g7-export-backend.md`.
+
+**Benchmark latency (chạy thật trên Colab, GPU T4, N=50 lần inference):**
+
+| Backend | avg latency (ms) | FPS |
+|---|---|---|
+| PyTorch (.pt) | 247.94 | 4.03 |
+| ONNX Runtime (.onnx) | 206.29 | 4.85 |
+
+ONNX nhanh hơn PyTorch ~17%. Cả 2 số đo trên GPU T4 dùng chung của Colab
+free-tier, **không đại diện cho CPU thật lúc deploy** (Giai đoạn 9 dùng
+Hugging Face Spaces CPU free-tier) — chỉ để so sánh tương đối 2 backend,
+sẽ đo lại latency thật khi có server CPU thật.
+
+**Backend (`app/service.py`):** implement thật ONNX inference (letterbox
+preprocess, NMS theo từng lớp riêng, dịch box về ảnh gốc —
+`src/models/onnx_inference.py`) + MediaPipe landmark extraction, nối với
+`score_pose()` từ Giai đoạn 6.
+
+**Test end-to-end thật** (CPU local, `best.onnx` thật, `curl` →
+`POST /predict` với 1 ảnh `tree`):
+```json
+{"detections":[{"pose":"tree","confidence":0.92,"box":[256.2,73.5,449.1,592.7],
+  "form_ok":true,"tips":[],"latency_ms":245.8}]}
+```
+Đúng lớp, confidence cao, `form_ok=true` (không có issue) — xác nhận cả 2
+lớp (detector ONNX + rule-based form scoring) hoạt động đúng thật, không
+chỉ là smoke test với model giả nữa.

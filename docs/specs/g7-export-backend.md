@@ -1,7 +1,7 @@
 # Spec — g7. Export & Backend (rubric: mục 7 — Deployment)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 7
-**Status:** implemented <!-- Phần B (code) xong + smoke test; Phần A (export/benchmark thật) cần chạy trên Colab, xem Implementation notes -->
+**Status:** implemented
 
 ## Mục tiêu
 
@@ -243,9 +243,30 @@ sigmoid) — xác nhận **373 detection** đi hết pipeline (ONNX detect → c
 `PredictResponse`, `/health` vẫn hoạt động. Không đo được độ chính xác
 thật (model chưa train) — chỉ xác nhận code chạy đúng.
 
-**Deferred (ngoài môi trường này — cần checkpoint thật trên Colab/Drive):**
-T7.1 (export ONNX thật từ `yolov8n_v1_baseline`), T7.2 (benchmark latency
-thật PyTorch vs ONNX). Notebook `04_export_onnx.ipynb` đã viết sẵn, bạn
-chạy trên Colab rồi báo lại số liệu. T7.3 (quantization) và T7.7
-(`/predict_video`) là optional, không làm (đúng buffer priority trong
-PLAN.md).
+**T7.1/T7.2 — chạy thật trên Colab (kết quả thật):** export ONNX thành
+công (`best.onnx`), xác nhận `onnxruntime` load + inference được. Benchmark
+N=50, GPU T4: PyTorch (.pt) 247.94ms/4.03fps, ONNX Runtime (.onnx)
+206.29ms/4.85fps — ONNX nhanh hơn ~17%. Ghi vào `problem_statement.md` +
+`notebooks/04_export_onnx.ipynb`.
+
+**Sự cố môi trường thật gặp khi chạy (đã sửa):**
+`requirements.txt` pin `mediapipe==0.10.21` (chốt theo bản có sẵn trên máy
+Windows local) không có wheel cho Python trên Colab — chỉ `0.10.30+`/`1.0.x`
+khả dụng ở đó, khiến `pip install -r requirements.txt` thất bại hoàn toàn
+(không chỉ riêng mediapipe). Sửa: nới thành khoảng `mediapipe>=0.10,<1.0`
+— toàn bộ dòng `0.10.x` (gồm `0.10.30+`) vẫn còn API cũ `solutions.pose`
+(chỉ `1.0+` mới bỏ, xem Giai đoạn 6), nên khoảng này portable qua nhiều
+Python/platform mà vẫn tránh được bug gốc.
+
+T7.3 (quantization) và T7.7 (`/predict_video`) là optional, không làm
+(đúng buffer priority trong PLAN.md).
+
+**T7.6 — `curl` thật (kết quả thật, CPU local, `best.onnx` thật đã tải
+về `models/best.onnx`):**
+```json
+{"detections":[{"pose":"tree","confidence":0.92,"box":[256.2,73.5,449.1,592.7],
+  "form_ok":true,"tips":[],"latency_ms":245.8}]}
+```
+Đúng lớp, confidence cao, `form_ok=true` — xác nhận toàn bộ pipeline thật
+(ONNX detect → crop → MediaPipe → `score_pose()`) chạy đúng end-to-end,
+không chỉ smoke test model giả nữa.

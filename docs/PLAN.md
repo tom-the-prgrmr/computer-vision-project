@@ -64,12 +64,12 @@ File: `src/pose_scoring/angle_rules.py`
 
 ## Giai đoạn 7 — Export & Backend (9/9 – 10/9)
 File: `notebooks/04_export_onnx.ipynb`, `app/service.py`, `app/controller.py`
-- [ ] T7.1 `model.export(format="onnx")` trên model tốt nhất (từ GĐ5), xác nhận file `.onnx` chạy được — *code+notebook sẵn sàng (`src/models/export.py`, `notebooks/04_export_onnx.ipynb`), cần chạy thật trên Colab (checkpoint chỉ có trên Drive)*
-- [ ] T7.2 Benchmark latency: N lần inference PyTorch `.pt` vs ONNX Runtime `.onnx`, lập bảng avg latency/FPS — *code sẵn sàng (notebook cell T7.2), cần chạy thật trên Colab*
+- [x] T7.1 `model.export(format="onnx")` trên model tốt nhất (từ GĐ5), xác nhận file `.onnx` chạy được
+- [x] T7.2 Benchmark latency: N lần inference PyTorch `.pt` vs ONNX Runtime `.onnx`, lập bảng avg latency/FPS — ONNX nhanh hơn PyTorch ~17% (206.29ms/4.85fps vs 247.94ms/4.03fps, GPU T4 Colab)
 - [ ] T7.3 *(optional, cần dư thời gian/GPU thuê)* thử dynamic quantization ONNX, benchmark lại
 - [x] T7.4 `app/service.py`: implement `_ensure_loaded()`/`_detect()` — load `onnxruntime.InferenceSession` 1 lần (lazy, không load lại mỗi request)
 - [x] T7.5 Implement `_extract_landmarks()` (MediaPipe) trong `app/service.py`; `/predict` ở `app/controller.py` chỉ cần gọi `service.predict_image()` — đã wire sẵn
-- [x] T7.6 Test — *đổi hình thức: FastAPI `TestClient` (model chưa train, 373 detection qua hết pipeline không crash, đúng schema) thay `curl` (cần `best.onnx` thật từ T7.1, bạn tự chạy khi có — xem spec g7 "Cách bạn tự test")*
+- [x] T7.6 Test bằng `curl -F "image=@sample.jpg" localhost:8000/predict`, kiểm tra response khớp schema — chạy thật với `best.onnx` thật: đúng 1 detection (`tree`, conf 0.92, `form_ok=true`), latency 245.8ms (CPU local)
 - [ ] T7.7 *(optional)* implement `/predict_video`
 
 ## Giai đoạn 8 — Web demo local (11/9)

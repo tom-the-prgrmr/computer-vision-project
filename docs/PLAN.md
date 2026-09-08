@@ -48,7 +48,7 @@ File: `src/evaluation/metrics.py`, `notebooks/03_evaluation_error_analysis.ipynb
 - [x] T4.5 Viết tóm tắt pattern lỗi (vd: sai nhiều khi vật nhỏ/bị che khuất/ánh sáng yếu/2 tư thế dáng giống nhau) vào notebook
 
 ## Giai đoạn 5 — Feedback loop cải tiến (6/9 – 8/9)
-- [ ] T5.1 Từ T4.2/T4.5, chọn 1 hướng cải thiện cụ thể — mặc định: augmentation/oversampling nhắm đúng cặp lớp hay nhầm (an toàn thời gian); chỉ làm v2 (`src/data/bootstrap_bbox.py`, mở rộng 15-20 lớp) nếu **đã xong T5.1-T5.4 sớm và còn dư thời gian**
+- [x] T5.1 Từ T4.2/T4.5, chọn 1 hướng cải thiện cụ thể — mặc định: augmentation/oversampling nhắm đúng cặp lớp hay nhầm (an toàn thời gian); chỉ làm v2 (`src/data/bootstrap_bbox.py`, mở rộng 15-20 lớp) nếu **đã xong T5.1-T5.4 sớm và còn dư thời gian**
 - [ ] T5.2 Implement thay đổi (sửa config augment, hoặc nếu làm v2 thì chạy `bootstrap_bboxes()`)
 - [ ] T5.3 Retrain với cùng seed, lưu thành run mới (không ghi đè run cũ — cần cả 2 để so sánh)
 - [ ] T5.4 Lập bảng trước/sau: mAP tổng + mAP riêng cho (các) lớp đã cải thiện

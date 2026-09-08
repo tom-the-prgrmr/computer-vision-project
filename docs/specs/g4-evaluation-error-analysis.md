@@ -1,7 +1,7 @@
 # Spec — G4. Evaluation & Error Analysis (rubric: mục 4 — Evaluation & Error Analysis)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 4 (`T4.1`–`T4.5`)
-**Status:** implemented <!-- code xong — chạy thật trên Colab + T4.5 tóm tắt còn deferred, xem Implementation notes -->
+**Status:** implemented
 
 ## Mục tiêu
 
@@ -147,10 +147,19 @@ implement, không phải lựa chọn cần bạn quyết trước.
     về đúng `('tree', 'plank', 5)`, không bị đảo ngược sau khi sửa. JSON +
     cú pháp notebook hợp lệ. Không chạy EigenCAM/`model.val()` thật (cần
     GPU + checkpoint + dataset trên Drive).
-- **T4.1-T4.5 (chạy thật trên Colab) — deferred.** Cần bạn tự chạy
-  `03_evaluation_error_analysis.ipynb` trên Colab, xem "Cách bạn tự test"
-  ở trên, rồi gửi lại quan sát (cặp lớp hay nhầm nếu có, nhận xét ảnh
-  EigenCAM) để mình viết tóm tắt T4.5.
+- **T4.1-T4.5 — done.** Chạy thật trên Colab (T4 GPU). Kết quả: **0 cặp lớp
+  bị nhầm** trên confusion matrix, **0/101 ảnh test dự đoán sai** (per-image
+  top-box check), khớp mAP@0.5 = 0.9922 đã rất cao. 5 ảnh minh hoạ EigenCAM
+  đều ĐÚNG, confidence 0.88–0.96 — `tree`/`plank`/`shoulderstand` model chú
+  ý đúng vùng thân thể đặc trưng tư thế; `downward`/`bridge` heatmap lan ra
+  rìa khung hình (hạn chế kỹ thuật EigenCAM trên detection, không phải
+  model nhầm). Ghi vào notebook (T4.4 nhận xét + T4.5 tóm tắt) và
+  `docs/problem_statement.md` (mục "Evaluation & Error Analysis").
+
+  **Kết luận quan trọng cho Giai đoạn 5:** vì không có cặp lớp nào bị nhầm,
+  hướng cải thiện mặc định trong `docs/PLAN.md` T5.1 (augmentation/
+  oversampling nhắm đúng cặp lớp hay nhầm) **không áp dụng được** — spec
+  Giai đoạn 5 cần chọn hướng khác dựa trên thực tế này.
 
 - **Lỗi phát sinh khi chạy thật (đã sửa, 2 vòng):**
   1. `cam(tensor)` báo `TypeError: ... missing 1 required positional

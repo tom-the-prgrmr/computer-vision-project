@@ -142,3 +142,28 @@ cho Giai đoạn 5 (retrain sau cải tiến).
 *(mAP baseline ở bảng này lệch nhẹ so với con số train lần đầu — 0.9923/
 0.8435 — dù cùng `seed=42`, do YOLO/cuDNN không hoàn toàn deterministic
 giữa các lần train trên GPU; chênh lệch ở mức nhiễu bình thường.)*
+
+## Evaluation & Error Analysis (Giai đoạn 4)
+
+Confusion matrix + EigenCAM trên model baseline (config ON,
+`yolov8n_v1_baseline`) — xem `docs/specs/g4-evaluation-error-analysis.md`.
+
+**Confusion matrix:** không có cặp lớp nào bị nhầm trên test set (101 ảnh)
+— khớp với mAP@0.5 = 0.9922 đã rất cao. 5 ảnh minh hoạ EigenCAM đều là dự
+đoán đúng, confidence 0.88–0.96.
+
+**EigenCAM:** ở `tree`, `plank`, `shoulderstand`, vùng model chú ý (heatmap
+nóng) tập trung đúng vào phần thân thể đặc trưng cho tư thế (chân co/bàn
+chân ở `tree`, vùng hông-thân ở `plank`/`shoulderstand`). Ở `downward` và
+`bridge`, vùng nóng lại lan ra rìa khung hình thay vì tập trung hẳn vào
+người — không phải model nhầm lẫn thật (confidence vẫn cao, 0.92/0.96) mà
+là hạn chế kỹ thuật đã biết của EigenCAM trên model detection (không dùng
+Grad-CAM chuẩn được — xem `docs/REQUIREMENTS.md` §7).
+
+**Kết luận:** dataset v1 (5 lớp, hình dạng tư thế khác biệt rõ rệt) quá
+"dễ" với `yolov8n` ở baseline — không có pattern lỗi phân loại thật sự để
+sửa. Vì vậy hướng cải thiện mặc định ở Giai đoạn 5 (augmentation/
+oversampling nhắm đúng cặp lớp hay nhầm) **không áp dụng được** — Giai
+đoạn 5 cần chọn hướng khác (vd mở rộng sang v2 nhiều lớp hơn để có bài
+toán thật sự khó hơn, hoặc test model trên ảnh/video ngoài dataset để tìm
+lỗi thực tế thay vì trên test set cùng phân bố).

@@ -41,11 +41,11 @@ File: `src/models/train.py`, `notebooks/02_train_detector.ipynb`
 
 ## Giai đoạn 4 — Evaluation & Error Analysis (4/9 – 5/9)
 File: `src/evaluation/metrics.py`, `notebooks/03_evaluation_error_analysis.ipynb`
-- [ ] T4.1 Viết helper trong `metrics.py` để load/hiển thị confusion matrix từ kết quả validate của Ultralytics
-- [ ] T4.2 Xác định 2-3 cặp lớp hay bị nhầm nhất từ confusion matrix
-- [ ] T4.3 Cài `pytorch-grad-cam`, chạy **EigenCAM** (không dùng Grad-CAM chuẩn — xem lý do trong `REQUIREMENTS.md` mục 7) trên model đã train, chọn target layer ở cuối backbone
-- [ ] T4.4 Lưu 3-5 ảnh EigenCAM kèm 1-2 câu giải thích mỗi ảnh (model nhìn đúng chỗ hay bị phân tâm bởi nền?)
-- [ ] T4.5 Viết tóm tắt pattern lỗi (vd: sai nhiều khi vật nhỏ/bị che khuất/ánh sáng yếu/2 tư thế dáng giống nhau) vào notebook
+- [x] T4.1 Viết helper trong `metrics.py` để load/hiển thị confusion matrix từ kết quả validate của Ultralytics
+- [x] T4.2 Xác định 2-3 cặp lớp hay bị nhầm nhất từ confusion matrix
+- [x] T4.3 Cài `pytorch-grad-cam`, chạy **EigenCAM** (không dùng Grad-CAM chuẩn — xem lý do trong `REQUIREMENTS.md` mục 7) trên model đã train, chọn target layer ở cuối backbone
+- [x] T4.4 Lưu 3-5 ảnh EigenCAM kèm 1-2 câu giải thích mỗi ảnh (model nhìn đúng chỗ hay bị phân tâm bởi nền?)
+- [x] T4.5 Viết tóm tắt pattern lỗi (vd: sai nhiều khi vật nhỏ/bị che khuất/ánh sáng yếu/2 tư thế dáng giống nhau) vào notebook
 
 ## Giai đoạn 5 — Feedback loop cải tiến (6/9 – 8/9)
 - [ ] T5.1 Từ T4.2/T4.5, chọn 1 hướng cải thiện cụ thể — mặc định: augmentation/oversampling nhắm đúng cặp lớp hay nhầm (an toàn thời gian); chỉ làm v2 (`src/data/bootstrap_bbox.py`, mở rộng 15-20 lớp) nếu **đã xong T5.1-T5.4 sớm và còn dư thời gian**

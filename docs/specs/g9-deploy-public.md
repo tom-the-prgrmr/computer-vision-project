@@ -215,6 +215,24 @@ lại `cv-architecture-review` cho riêng thay đổi `BACKEND_URL` này (thay
 1) — nếu muốn chắc chắn hơn, có thể yêu cầu review thêm 1 vòng trước khi
 commit.
 
+**Lỗi thật gặp khi deploy Render (không phải bug review bỏ sót — môi trường
+review này không chạy được Docker thật, xem ghi chú Docker build ở vòng 1):**
+1. Lần build đầu tiên chạy Python 3.14 (native runtime Render tự chọn thay
+   vì Docker) → `mediapipe==0.10.21` không có wheel cho 3.14 → build fail.
+   Nguyên nhân: Render auto-detect nhầm "Python" thay vì "Docker" runtime
+   dù repo có `Dockerfile` (có thể do repo cũng có `requirements.txt`).
+   Không phải lỗi code — hướng dẫn bạn tạo lại Web Service, chọn đúng
+   Environment **Docker** trong lúc setup.
+2. Sau khi build đúng bằng Docker (`python:3.11-slim`): `ImportError:
+   libGL.so.1: cannot open shared object file` lúc import `cv2` —
+   `opencv-python-headless` vẫn link `libGL` dù là bản "headless", mà
+   base image slim không có sẵn thư viện đồ hoạ hệ thống này. Đây là lỗi
+   kinh điển, đã biết cách sửa chuẩn cộng đồng: thêm
+   `apt-get install -y libgl1 libglib2.0-0` vào `Dockerfile` trước bước
+   `pip install`. Đã sửa, nhưng **không verify build lại được thật** ở môi
+   trường này (Docker Desktop engine vẫn không chạy) — cần bạn xác nhận
+   qua lần Render tự rebuild sau khi push.
+
 **Việc còn lại — hoàn toàn external, cần bạn tự làm:** Git LFS cho
 `models/best.onnx`, tạo tài khoản + deploy Render, tạo tài khoản + deploy
 Cloudflare Pages, set `BACKEND_URL`/`ALLOWED_ORIGINS` chéo nhau đúng URL

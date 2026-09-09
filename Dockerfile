@@ -6,6 +6,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# opencv-python-headless vẫn link tới libGL lúc import dù là bản "headless"
+# (không có GUI) — base image slim không có sẵn thư viện đồ hoạ hệ thống
+# này, thiếu thì `import cv2` lỗi ImportError: libGL.so.1. libglib2.0-0 đi
+# kèm vì cùng nhóm lỗi hay gặp (libgthread-2.0.so.0) với opencv trên image
+# Debian tối giản.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Cài dependencies trước, tách layer riêng khỏi code để cache khi code đổi
 # mà requirements.txt không đổi.
 COPY requirements.txt .

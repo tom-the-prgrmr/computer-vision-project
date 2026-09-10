@@ -252,7 +252,13 @@
 
     async function captureAndPredict() {
       if (inFlight || !stream) return; // đợi request trước xong, tránh dồn request khi mạng chậm
+      // Video vừa mở trên 1 số trình duyệt (đặc biệt iOS Safari) có thể
+      // chưa kịp có videoWidth/videoHeight ở vài tick đầu -- bỏ qua lượt
+      // này thay vì tạo canvas 0x0 (toBlob trả null, không lỗi nhưng cũng
+      // không bao giờ có kết quả nếu tình cờ mắc kẹt ở trạng thái này).
+      if (!camVideo.videoWidth || !camVideo.videoHeight) return;
       inFlight = true;
+      camStatus.textContent = "Đang gửi khung hình lên server...";
       try {
         const canvas = document.createElement("canvas");
         canvas.width = camVideo.videoWidth;
@@ -261,12 +267,28 @@
         const blob = await new Promise((resolve) =>
           canvas.toBlob(resolve, "image/jpeg", 0.7) // nén JPEG cho nhẹ mạng di động
         );
-        if (!blob) return;
-        const data = await callPredict(blob);
-        renderCameraDetections(data.detections || []);
-        renderResults(data);
+        if (!blob) {
+          camStatus.textContent = "Camera đang chạy...";
+          return;
+        }
+        // Backend free tier có thể "ngủ" sau ~15 phút không dùng -- lần gọi
+        // đầu sau khi ngủ có thể mất rất lâu (cold start thật, không phải
+        // treo). Timeout 60s để không chờ vô hạn nếu thật sự có sự cố.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        try {
+          const data = await callPredict(blob, controller.signal);
+          renderCameraDetections(data.detections || []);
+          renderResults(data);
+          camStatus.textContent = "Camera đang chạy...";
+        } finally {
+          clearTimeout(timeoutId);
+        }
       } catch (err) {
-        camStatus.textContent = "Lỗi gọi API: " + err.message;
+        camStatus.textContent =
+          err.name === "AbortError"
+            ? "Server phản hồi quá lâu (>60s) -- thử lại, hoặc server có thể đang khởi động lại sau khi ngủ."
+            : "Lỗi gọi API: " + err.message;
       } finally {
         inFlight = false;
       }
@@ -303,10 +325,10 @@
     window.addEventListener("beforeunload", stopCamera);
 
     // ---- Shared API call ----
-    async function callPredict(fileOrBlob) {
+    async function callPredict(fileOrBlob, signal) {
       const form = new FormData();
       form.append("image", fileOrBlob, "frame.jpg");
-      const res = await fetch(API_BASE + "/predict", { method: "POST", body: form });
+      const res = await fetch(API_BASE + "/predict", { method: "POST", body: form, signal });
       if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
       return res.json();
     }

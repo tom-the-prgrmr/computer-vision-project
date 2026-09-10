@@ -1,0 +1,417 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yoga Pose Deck</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F3F5EE; --surface:#FFFFFF; --surface-2:#EAEEE1;
+    --ink:#1E2A20; --ink-soft:#56634F; --line:#D7DECB;
+    --pass:#2E7D52; --pass-soft:#E4F0E4;
+    --issue:#C4482E; --issue-soft:#F7E4DD;
+    --font-display:"Fraunces", Georgia, serif;
+    --font-body:"IBM Plex Sans", -apple-system, Segoe UI, sans-serif;
+    --font-mono:"IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161D16; --surface:#1D251C; --surface-2:#242D22;
+      --ink:#EAF0E4; --ink-soft:#A6B49B; --line:#34402F;
+      --pass:#5FC787; --pass-soft:#20301F;
+      --issue:#E88361; --issue-soft:#332018;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161D16; --surface:#1D251C; --surface-2:#242D22;
+    --ink:#EAF0E4; --ink-soft:#A6B49B; --line:#34402F;
+    --pass:#5FC787; --pass-soft:#20301F;
+    --issue:#E88361; --issue-soft:#332018;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-body); overflow:hidden;
+    background-image: radial-gradient(var(--line) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  h1,h2{font-family:var(--font-display); text-wrap:balance; margin:0;}
+  p{margin:0;}
+  .bk{color:var(--pass); font-weight:600;}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-soft); margin:0 0 1.1rem;
+  }
+  .num{font-variant-numeric:tabular-nums;}
+
+  /* ---- deck shell ---- */
+  #deck{position:relative; width:100vw; height:100vh;}
+  .progress{position:fixed; top:0; left:0; height:3px; background:var(--pass); z-index:20; transition:width .35s ease;}
+  .slide{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    padding:5vh 6vw 9vh;
+  }
+  .slide[hidden]{display:none;}
+  .slide-inner{width:100%; max-width:1100px;}
+
+  /* ---- reusable pieces ---- */
+  .cols{display:grid; grid-template-columns:1.3fr 1fr; gap:3.5rem; align-items:start;}
+  @media (max-width:820px){ .cols{grid-template-columns:1fr;} }
+  ul.plain{list-style:none; margin:1.5rem 0 0; padding:0; display:flex; flex-direction:column; gap:.85rem;}
+  ul.plain li{padding-left:1.15rem; position:relative; color:var(--ink-soft); line-height:1.55;}
+  ul.plain li::before{content:"—"; position:absolute; left:0; color:var(--pass);}
+  ul.plain li b{color:var(--ink); font-weight:600;}
+
+  .tile{
+    background:var(--surface); border:1px solid var(--line);
+    padding:1.6rem 1.8rem; clip-path:polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  }
+  .tile + .tile{margin-top:1.1rem;}
+  .tile .big{font-family:var(--font-display); font-size:3rem; font-weight:600; line-height:1; color:var(--pass);}
+  .tile .cap{font-family:var(--font-mono); font-size:.78rem; color:var(--ink-soft); margin-top:.5rem; display:block; line-height:1.5;}
+  .tile.issue .big{color:var(--issue);}
+
+  .callout{
+    background:var(--issue-soft); border-left:3px solid var(--issue);
+    padding:1.1rem 1.4rem; margin-top:1.6rem;
+  }
+  .callout p{color:var(--ink); line-height:1.6; font-size:.92rem;}
+  .callout b{font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--issue); display:block; margin-bottom:.5rem;}
+
+  table{width:100%; border-collapse:collapse; margin-top:1.6rem; font-size:.95rem;}
+  th,td{text-align:left; padding:.65rem .9rem; border-bottom:1px solid var(--line);}
+  th{font-family:var(--font-mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); font-weight:500;}
+  td{color:var(--ink);}
+  td.num, th.num{text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  tr.win td{color:var(--pass); font-weight:600;}
+
+  .chip{
+    display:inline-flex; align-items:center; gap:.5rem; font-family:var(--font-mono);
+    font-size:.85rem; background:var(--surface-2); border:1px solid var(--line);
+    padding:.5rem 1rem; color:var(--ink);
+  }
+  .chip b{color:var(--pass); font-weight:600;}
+
+  .boxrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1.4rem; margin-top:2rem;}
+  @media (max-width:820px){.boxrow{grid-template-columns:1fr;}}
+  .box{border:1px solid var(--line); background:var(--surface); padding:1.4rem 1.3rem;}
+  .box .tag{font-family:var(--font-mono); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; padding:.2rem .5rem; display:inline-block; margin-bottom:.9rem;}
+  .box.trained .tag{color:var(--pass); background:var(--pass-soft);}
+  .box.pretrained .tag{color:#8a6d1f; background:#f5ecd2;}
+  .box.rule .tag{color:#5a4a9c; background:#eae4f7;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .box.pretrained .tag{color:#e0c876; background:#3a3320;}
+    :root:not([data-theme="light"]) .box.rule .tag{color:#c3b3f0; background:#2c2540;}
+  }
+  :root[data-theme="dark"] .box.pretrained .tag{color:#e0c876; background:#3a3320;}
+  :root[data-theme="dark"] .box.rule .tag{color:#c3b3f0; background:#2c2540;}
+  .box h3{font-family:var(--font-display); font-size:1.3rem; margin-bottom:.4rem;}
+  .box p{color:var(--ink-soft); font-size:.88rem; line-height:1.5;}
+
+  .lesson{display:flex; gap:1rem; align-items:baseline; padding:.9rem 0; border-bottom:1px solid var(--line);}
+  .lesson:last-child{border-bottom:none;}
+  .lesson .fix{font-family:var(--font-mono); font-size:.68rem; color:var(--pass); border:1px solid var(--pass); padding:.15rem .45rem; flex:none;}
+  .lesson p{color:var(--ink-soft); line-height:1.5; font-size:.92rem;}
+  .lesson b{color:var(--ink);}
+
+  /* ---- slide 0: cover ---- */
+  .cover{text-align:left;}
+  .cover .eyebrow{font-size:.78rem;}
+  .cover h1{font-size:clamp(2.4rem,5.2vw,4.2rem); font-weight:600; line-height:1.05; max-width:16ch;}
+  .cover p.sub{font-size:1.15rem; color:var(--ink-soft); max-width:52ch; margin-top:1.4rem; line-height:1.6;}
+  .cover .chip{margin-top:2.2rem;}
+
+  h2.slide-title{font-size:clamp(1.6rem,3vw,2.5rem); font-weight:600; line-height:1.15; max-width:20ch; margin-bottom:1.5rem;}
+
+  /* ---- nav ---- */
+  #nav{
+    position:fixed; bottom:0; left:0; right:0; height:64px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 6vw; font-family:var(--font-mono); font-size:.8rem; color:var(--ink-soft);
+    border-top:1px solid var(--line); background:var(--bg); z-index:20;
+  }
+  #nav .btns{display:flex; gap:.6rem;}
+  #nav button{
+    font-family:var(--font-mono); font-size:.95rem; width:38px; height:38px;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  #nav button:hover{border-color:var(--pass); color:var(--pass);}
+  #nav button:focus-visible{outline:2px solid var(--pass); outline-offset:2px;}
+  #nav button:disabled{opacity:.35; cursor:default;}
+  #nav button:disabled:hover{border-color:var(--line); color:var(--ink);}
+  #counter{font-variant-numeric:tabular-nums;}
+  #label{display:none;}
+  @media (min-width:720px){ #label{display:inline;} }
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide{animation:rise .45s ease both;}
+    @keyframes rise{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  }
+</style>
+
+<div class="progress" id="progress" style="width:7.7%"></div>
+
+<div id="deck">
+
+  <section class="slide cover" data-i="0">
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> COMPUTER VISION MODULE · AI ENGINEER K08-0226 <span class="bk">]</span></p>
+      <h1>Yoga Pose Detection &amp; Form Scoring</h1>
+      <p class="sub">Phát hiện + phân loại tư thế yoga bằng YOLOv8 tự train, chấm điểm form bằng góc khớp MediaPipe, deploy public thật với HTTPS và camera trên iPhone.</p>
+      <div class="chip">demo · <b>computer-vision-project.pthieu290998.workers.dev</b></div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="1" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> MỞ ĐẦU · BÀI TOÁN <span class="bk">]</span></p>
+      <div class="cols">
+        <div>
+          <h2 class="slide-title">Một model train được, làm cả định vị lẫn phân loại</h2>
+          <ul class="plain">
+            <li><b>Input:</b> ảnh/video học viên đang tập yoga</li>
+            <li><b>Output:</b> vị trí + tên tư thế, đánh giá form đúng/sai, gợi ý sửa</li>
+            <li><b>Ràng buộc đề bài:</b> bắt buộc 1 model classification/detection/segmentation tự train</li>
+            <li><b>Lựa chọn:</b> YOLOv8 detection — vừa localize vừa classify trong 1 bước, hỗ trợ nhiều học viên/khung hình cùng lúc</li>
+          </ul>
+        </div>
+        <div class="tile">
+          <span class="big">5</span>
+          <span class="cap">lớp tư thế<br>bridge · downward · plank<br>shoulderstand · tree</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="2" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> KIẾN TRÚC · 2 LỚP ĐỘC LẬP <span class="bk">]</span></p>
+      <h2 class="slide-title">Model train được, model mượn, và luật tay — không trộn lẫn</h2>
+      <div class="boxrow">
+        <div class="box trained">
+          <span class="tag">trained</span>
+          <h3>YOLOv8 (ONNX)</h3>
+          <p>Detect + classify tư thế trong 1 bước. Rubric mục 1-4, 7 chấm điểm lớp này.</p>
+        </div>
+        <div class="box pretrained">
+          <span class="tag">pretrained</span>
+          <h3>MediaPipe Pose</h3>
+          <p>33 keypoint mỗi box, dùng nguyên off-the-shelf, không train lại, không tính accuracy riêng.</p>
+        </div>
+        <div class="box rule">
+          <span class="tag">rule-based</span>
+          <h3>score_pose()</h3>
+          <p>So góc khớp với <code>POSE_RULES</code> hiệu chỉnh thủ công. Rubric mục 6 — "ý tưởng riêng".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="3" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 01 · DỮ LIỆU <span class="bk">]</span></p>
+      <div class="cols">
+        <div>
+          <h2 class="slide-title">v1 chạy hết vòng đời thật — v2 dừng ở thiết kế</h2>
+          <ul class="plain">
+            <li><b>v1:</b> 5 lớp, format YOLO có sẵn bbox, nguồn Roboflow "YOLO YOGA Dataset"</li>
+            <li><b>Augmentation:</b> <code>fliplr</code> bật, <code>flipud</code> tắt (lật dọc phá vỡ ý nghĩa tư thế), <code>degrees</code> giới hạn</li>
+            <li><b>v2</b> (15-20 lớp, Yoga-82 + pseudo-label từ person detector): code đã thiết kế sẵn (<code>bootstrap_bboxes()</code>) nhưng không triển khai — v1 đã đủ robust (xem GĐ 05)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="tile"><span class="big" style="font-size:1.8rem">v1 · LIVE</span><span class="cap">download → train → ablation → eval → export → deploy</span></div>
+          <div class="tile issue"><span class="big" style="font-size:1.8rem">v2 · STUB</span><span class="cap">bootstrap_bbox.py — NotImplementedError, chưa cần chạy</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="4" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 02-03 · TRAINING &amp; ABLATION <span class="bk">]</span></p>
+      <h2 class="slide-title">Cùng seed, đổi đúng 1 biến</h2>
+      <p style="color:var(--ink-soft)">model <code>yolov8n.pt</code> · seed <span class="num">42</span> · epochs <span class="num">50</span> · imgsz <span class="num">640</span></p>
+      <table>
+        <thead><tr><th>Run</th><th>Augmentation</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr class="win"><td>Baseline</td><td>ON</td><td>Thắng — chọn làm config chính thức</td></tr>
+          <tr><td>Ablation</td><td>OFF</td><td>So sánh, không chọn</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">Số mAP@0.5 / mAP@0.5:0.95 thật — xem bảng đầy đủ trong <code>docs/problem_statement.md</code>.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-i="5" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 04 · EVALUATION &amp; ERROR ANALYSIS <span class="bk">]</span></p>
+      <h2 class="slide-title">Confusion matrix sạch, EigenCAM xác nhận nhìn đúng chỗ</h2>
+      <ul class="plain">
+        <li>Confusion matrix: không có cặp lớp nào bị nhầm đáng kể trong tập test (cùng phân bố training)</li>
+        <li>EigenCAM (3-5 ảnh): model tập trung đúng vùng cơ thể, không bị phân tâm bởi nền</li>
+        <li>→ Không có lỗi trong tập test cùng phân bố để "sửa" — phải đổi hướng cho bước feedback loop</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide" data-i="6" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 05 · FEEDBACK LOOP <span class="bk">]</span></p>
+      <div class="cols">
+        <div>
+          <h2 class="slide-title">Đo lỗi thật ngoài phân bố, không sửa mù quáng</h2>
+          <ul class="plain">
+            <li>18 ảnh thật, nguồn Kaggle — khác hoàn toàn Roboflow (khác chụp/nền/2 lớp)</li>
+            <li>1 lỗi duy nhất, khả năng do nhãn gốc dataset sai — không phải lỗi hệ thống</li>
+            <li><b>Kết luận:</b> baseline đủ robust → không retrain</li>
+          </ul>
+        </div>
+        <div class="tile">
+          <span class="big">94.4%</span>
+          <span class="cap">17/18 ảnh OOD đúng</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="7" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 06 · Ý TƯỞNG RIÊNG <span class="bk">]</span></p>
+      <h2 class="slide-title">Góc khớp thật hiệu chỉnh ngưỡng, không đoán số</h2>
+      <div class="cols">
+        <div>
+          <div class="tile"><span class="big">14/15</span><span class="cap">ảnh mẫu thật đúng form</span></div>
+          <div class="tile"><span class="big">5/5</span><span class="cap">case landmark tổng hợp lệch góc — phát hiện đúng</span></div>
+        </div>
+        <div class="callout">
+          <b>2 hạn chế ghi nhận công khai</b>
+          <p>MediaPipe kém tin cậy trên tư thế lộn ngược, nền tương phản thấp — landmark detect sai. Góc chiếu 2D bị méo khi camera chụp xiên — hạn chế cố hữu của ảnh đơn không có depth, không phải bug.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="8" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 07 · EXPORT &amp; BACKEND <span class="bk">]</span></p>
+      <h2 class="slide-title">ONNX nhanh hơn PyTorch ~17% — nhưng CPU free-tier là CPU free-tier</h2>
+      <table>
+        <thead><tr><th>Nơi đo</th><th class="num">Latency</th></tr></thead>
+        <tbody>
+          <tr><td>PyTorch · GPU T4 (Colab)</td><td class="num">247.94 ms</td></tr>
+          <tr class="win"><td>ONNX Runtime · GPU T4 (Colab)</td><td class="num">206.29 ms</td></tr>
+          <tr><td>ONNX Runtime · CPU (local)</td><td class="num">245.8 ms</td></tr>
+          <tr><td>ONNX Runtime · CPU (Render free)</td><td class="num">~4.5 – 8.4 s</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">Chênh lệch CPU free-tier do tài nguyên bị giới hạn/chia sẻ mạnh — kết quả vẫn đúng, chỉ chậm hơn, không phải bug.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-i="9" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 08-09 · WEB DEMO &amp; DEPLOY <span class="bk">]</span></p>
+      <div class="cols">
+        <div>
+          <h2 class="slide-title">2 origin thật, HTTPS thật, camera thật trên iPhone</h2>
+          <p style="color:var(--ink-soft); line-height:1.6">iPhone Safari → <b style="color:var(--ink)">Cloudflare Pages</b> (frontend tĩnh) → <b style="color:var(--ink)">Render</b> (backend Docker, free) — CORS qua env <code>ALLOWED_ORIGINS</code>.</p>
+        </div>
+        <div>
+          <p class="eyebrow" style="margin-bottom:.8rem">3 bug môi trường thật, đã sửa</p>
+          <div class="lesson"><span class="fix">FIX</span><p>Render chọn nhầm runtime Python thay vì Docker → chọn đúng Environment</p></div>
+          <div class="lesson"><span class="fix">FIX</span><p>Thiếu <code>libGL.so.1</code> trên container Linux tối giản → thêm apt package</p></div>
+          <div class="lesson"><span class="fix">FIX</span><p>iOS Safari đẩy camera vào native fullscreen player → <code>webkit-playsinline</code></p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="10" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> LỖI &amp; BÀI HỌC <span class="bk">]</span></p>
+      <h2 class="slide-title">Chẩn đoán từ log/screenshot thật — không đoán</h2>
+      <div class="lesson"><span class="fix">FIX</span><p><b>Tiền tố "yoga-pose "</b> chưa bỏ trước khi so sánh → OOD báo nhầm 0% — sửa bằng đối chiếu log gốc, không đoán số liệu.</p></div>
+      <div class="lesson"><span class="fix">FIX</span><p><b>mediapipe ≥ 1.0</b> bỏ hẳn <code>solutions.pose</code> (API cũ) → pin đúng bản còn API, xác nhận thật qua lỗi build thật.</p></div>
+      <div class="lesson"><span class="fix">FIX</span><p><b>Letterbox rounding</b> lệch ~2.3px trên ảnh tỉ lệ cực đoan → làm tròn pad 1 lần, dùng lại nhất quán.</p></div>
+      <div class="lesson"><span class="fix">FIX</span><p><b>3 bug deploy</b> (runtime Docker, libGL, iOS fullscreen) — cả 3 chẩn đoán trực tiếp từ log build/screenshot thiết bị thật, không đoán mò.</p></div>
+    </div>
+  </section>
+
+  <section class="slide" data-i="11" hidden>
+    <div class="slide-inner" style="text-align:center">
+      <p class="eyebrow"><span class="bk">[</span> TRÌNH DIỄN TRỰC TIẾP <span class="bk">]</span></p>
+      <h2 class="slide-title" style="max-width:none">Camera thật · HTTPS thật · kết quả thật</h2>
+      <div class="chip" style="font-size:1.05rem; padding:.9rem 1.6rem; margin-top:.5rem;">computer-vision-project.pthieu290998.workers.dev</div>
+      <p style="color:var(--ink-soft); margin-top:1.6rem;">Quay trực tiếp lúc trình bày — camera trên điện thoại thật qua URL public, không dùng ảnh chụp màn hình dựng sẵn.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-i="12" hidden>
+    <div class="slide-inner">
+      <p class="eyebrow"><span class="bk">[</span> KẾT <span class="bk">]</span></p>
+      <h2 class="slide-title">Cảm ơn — câu hỏi?</h2>
+      <ul class="plain">
+        <li><b>Repo:</b> github.com/tom-the-prgrmr/computer-vision-project</li>
+        <li><b>Demo live:</b> computer-vision-project.pthieu290998.workers.dev</li>
+        <li><b>Kiến trúc:</b> docs/architecture.md</li>
+        <li><b>Chi tiết 7 mục rubric:</b> docs/problem_statement.md</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<div id="nav">
+  <span><span id="counter" class="num">01</span> / <span id="total" class="num">13</span> <span id="label"></span></span>
+  <div class="btns">
+    <button id="prev" aria-label="Slide trước">‹</button>
+    <button id="next" aria-label="Slide sau">›</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var total = slides.length;
+    var counterEl = document.getElementById('counter');
+    var totalEl = document.getElementById('total');
+    var progressEl = document.getElementById('progress');
+    var prevBtn = document.getElementById('prev');
+    var nextBtn = document.getElementById('next');
+    totalEl.textContent = String(total).padStart(2, '0');
+
+    var saved = 0;
+    try {
+      var stored = parseInt(localStorage.getItem('deckSlide'), 10);
+      if (!isNaN(stored) && stored >= 0 && stored < total) saved = stored;
+    } catch (e) {}
+
+    var i = saved;
+
+    function render() {
+      slides.forEach(function (s, idx) { s.hidden = idx !== i; });
+      counterEl.textContent = String(i + 1).padStart(2, '0');
+      progressEl.style.width = ((i + 1) / total * 100) + '%';
+      prevBtn.disabled = i === 0;
+      nextBtn.disabled = i === total - 1;
+      try { localStorage.setItem('deckSlide', String(i)); } catch (e) {}
+    }
+
+    function go(delta) {
+      var n = i + delta;
+      if (n < 0 || n >= total) return;
+      i = n;
+      render();
+    }
+
+    prevBtn.addEventListener('click', function () { go(-1); });
+    nextBtn.addEventListener('click', function () { go(1); });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === ' ') { go(1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { go(-1); e.preventDefault(); }
+    });
+
+    render();
+  })();
+</script>

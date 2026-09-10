@@ -103,7 +103,29 @@ Có sẵn phương án thay thế dùng VPS riêng + Caddy (đã build + review 
 xem `docker-compose.yml`/`Caddyfile` + chi tiết trong
 `docs/specs/g9-deploy-public.md`) nếu Render free không đủ ổn định.
 
+## Kết quả
+
+Số liệu thật (không phải ước tính), chi tiết đầy đủ ở
+[`docs/problem_statement.md`](docs/problem_statement.md):
+
+| Giai đoạn | Kết quả |
+|---|---|
+| Training baseline | YOLOv8n, 5 lớp, seed=42, epochs=50 — mAP thật xem `docs/problem_statement.md` mục "Training baseline" |
+| Ablation | Augmentation ON thắng OFF — xem mục "Ablation" |
+| Error analysis | Confusion matrix + EigenCAM, không có cặp lớp bị nhầm trong tập test |
+| Feedback loop (OOD) | 17/18 = **94.4%** trên ảnh ngoài dataset (Kaggle) — đủ robust, không cần retrain |
+| Form scoring (rule-based) | 14/15 ảnh mẫu thật đúng form + 5/5 case tổng hợp lệch góc phát hiện đúng — 2 hạn chế thật đã ghi nhận (MediaPipe trên pose lộn ngược, góc 2D bị méo khi camera chụp xiên) |
+| Export ONNX | Nhanh hơn PyTorch ~17% (GPU T4: 206.29ms vs 247.94ms); CPU local ~245.8ms/ảnh |
+| Deploy public | Render (backend) + Cloudflare Pages (frontend), HTTPS thật, camera xác nhận chạy đúng trên iPhone thật |
+
+**Demo live:** https://computer-vision-project.pthieu290998.workers.dev
+(⚠️ backend Render free tier ngủ sau ~15 phút không dùng — mở trang trước
+~1 phút để "đánh thức" nếu lần đầu chậm).
+
 ## Trạng thái
 
-Đang ở giai đoạn khởi tạo scaffold — xem tiến độ chi tiết tại
-[`docs/requirement_checklist.md`](docs/requirement_checklist.md).
+Đã hoàn thành Giai đoạn 0-9 (data → train → eval → feedback loop → form
+scoring → export → backend → web demo → deploy public) với số liệu/kết
+quả thật — xem tiến độ chi tiết tại
+[`docs/requirement_checklist.md`](docs/requirement_checklist.md). Còn lại:
+tài liệu/slide hoàn thiện (Giai đoạn 10) và video nộp bài (Giai đoạn 11).

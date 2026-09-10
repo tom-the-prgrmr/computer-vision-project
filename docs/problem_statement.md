@@ -197,6 +197,38 @@ ON từ Giai đoạn 3) đã đủ robust trên mức OOD nhỏ đã kiểm tra.
 tập OOD chỉ 18 ảnh, 3/5 lớp — không phải benchmark thống kê chắc chắn,
 chỉ đủ làm bằng chứng định tính cho quyết định này.
 
+## Form scoring rule-based (Giai đoạn 6)
+
+Lớp chấm điểm form — "ý tưởng riêng" của đề bài (rubric mục 6), **không
+phải model train được**, không có accuracy/F1 của chính nó — xem
+`docs/specs/g6-form-scoring.md` và `CLAUDE.md` về ranh giới với mục 5.
+
+**Hiệu chỉnh ngưỡng bằng số đo thật:** chạy MediaPipe Pose trên 15 ảnh mẫu
+thật (3 ảnh/lớp × 5 lớp: `bridge`, `downward`, `plank`, `shoulderstand`,
+`tree`, chọn lọc từ dataset v1, dedup theo ảnh gốc Roboflow), đo góc khớp
+thật rồi lấy khoảng ±15° làm `POSE_RULES` (thay vì đoán ngưỡng).
+
+**2 hạn chế thật phát hiện trong lúc hiệu chỉnh** (ghi công khai, không
+giấu):
+- **MediaPipe Pose kém tin cậy trên tư thế lộn ngược, nền tương phản
+  thấp:** 1 ảnh `shoulderstand` mẫu ban đầu cho góc lệch hẳn (hip=96.8°
+  so với ~155-160° ở 2 ảnh cùng lớp) dù tư thế đúng khi nhìn bằng mắt —
+  MediaPipe detect sai landmark, không dùng ảnh này để hiệu chỉnh.
+- **Góc quay camera làm méo góc chiếu 2D:** 1 ảnh `plank` chụp góc chéo
+  3/4 đo hip=119.8° (trái/phải đồng nhất, không phải nhiễu detect) trong
+  khi 2 ảnh plank thẳng cạnh đo ~174-179° — hạn chế cố hữu của tính góc
+  hình học từ ảnh đơn không có depth. Giữ nguyên ảnh này làm ví dụ minh
+  hoạ hạn chế thay vì loại bỏ dữ liệu bất tiện.
+- Dataset gộp cả *high plank* và *forearm plank* vào chung 1 lớp `plank`
+  → đã bỏ rule góc khuỷu tay (`elbow`) cho lớp này, chỉ giữ `hip`.
+
+**Kết quả test thủ công:** 14/15 ảnh mẫu thật `ok=True` đúng kỳ vọng (1
+ảnh "sai" đã biết lý do — case góc quay camera ở trên); 5/5 case landmark
+tổng hợp (chủ động lệch góc) phát hiện đúng issue kỳ vọng.
+
+**Xử lý pose ngoài `POSE_RULES`:** trả `ok=True, issues=[]` thay vì crash
+(lớp chưa hiệu chỉnh không nên bị coi là sai form).
+
 ## Export & Backend (Giai đoạn 7)
 
 Export `yolov8n_v1_baseline` (config ON, model tốt nhất vì Giai đoạn 5
@@ -211,9 +243,9 @@ xem `docs/specs/g7-export-backend.md`.
 | ONNX Runtime (.onnx) | 206.29 | 4.85 |
 
 ONNX nhanh hơn PyTorch ~17%. Cả 2 số đo trên GPU T4 dùng chung của Colab
-free-tier, **không đại diện cho CPU thật lúc deploy** (Giai đoạn 9 dùng
-Hugging Face Spaces CPU free-tier) — chỉ để so sánh tương đối 2 backend,
-sẽ đo lại latency thật khi có server CPU thật.
+free-tier, **không đại diện cho CPU thật lúc deploy** — số CPU thật đo
+được ở Giai đoạn 9 (xem mục dưới): ~245.8ms local, ~4.5-8.4s trên Render
+free tier (CPU bị giới hạn mạnh, không phải bug).
 
 **Backend (`app/service.py`):** implement thật ONNX inference (letterbox
 preprocess, NMS theo từng lớp riêng, dịch box về ảnh gốc —
@@ -229,3 +261,41 @@ preprocess, NMS theo từng lớp riêng, dịch box về ảnh gốc —
 Đúng lớp, confidence cao, `form_ok=true` (không có issue) — xác nhận cả 2
 lớp (detector ONNX + rule-based form scoring) hoạt động đúng thật, không
 chỉ là smoke test với model giả nữa.
+
+## Web demo & Deploy public (Giai đoạn 8-9)
+
+Web demo (`web/index.html`, tab Upload/Camera) đã có sẵn từ trước, Giai
+đoạn 8 là verify thật với backend thật (không viết mới) — xem
+`docs/specs/g8-web-demo.md`. Giai đoạn 9 deploy public — xem
+`docs/specs/g9-deploy-public.md`.
+
+**Kiến trúc deploy thật:** backend FastAPI trên **Render**
+(`https://computer-vision-project-hl82.onrender.com`, Docker, free tier,
+build từ `Dockerfile`), frontend tĩnh trên **Cloudflare Pages**
+(`https://computer-vision-project.pthieu290998.workers.dev`, trỏ vào
+`web/`) — 2 origin khác nhau, CORS qua env `ALLOWED_ORIGINS`. Lịch sử đổi
+host 2 lần (Hugging Face Spaces → VPS riêng → Render/Cloudflare Pages) do
+thông tin thật phát sinh khi thao tác thật (HF Docker Space bắt trả phí
+giữa chừng) — chi tiết đầy đủ trong `docs/specs/g9-deploy-public.md`.
+Phương án VPS + Caddy vẫn giữ trong repo làm phương án thay thế.
+
+**3 bug thật gặp khi deploy, đều đã sửa và verify lại:**
+1. `mediapipe==0.10.21` không có wheel cho Python 3.14 — do Render lúc
+   đầu build bằng native Python runtime thay vì `Dockerfile` (chọn nhầm
+   Environment lúc tạo service) — sửa bằng chọn đúng `Docker` runtime.
+2. `ImportError: libGL.so.1` lúc import `cv2` trên container Linux —
+   `opencv-python-headless` vẫn cần thư viện đồ hoạ hệ thống dù là bản
+   "headless" — sửa bằng thêm `apt-get install libgl1 libglib2.0-0` vào
+   `Dockerfile`.
+3. **Camera trên iPhone Safari bị đẩy vào native fullscreen video player**
+   (UI Live/Picture-in-Picture/pause che mất canvas overlay) thay vì phát
+   inline — bug WebKit đã biết với nguồn `getUserMedia`; `playsinline`
+   chuẩn không đủ — sửa bằng thêm `webkit-playsinline` + set
+   `playsInline`/`muted` qua thuộc tính JS trước khi gán `srcObject`.
+
+**Xác nhận T9.5 (camera thật trên iPhone, HTTPS công khai — điều kiện
+FR7):** video hiện inline đúng, box + tip vẽ đúng vị trí, card kết quả
+đúng — test bằng cách chĩa camera vào ảnh tư thế `downward` trên màn hình
+laptop: detect đúng `downward` conf 92%, `form_ok=false`, tip "Đẩy hông
+lên cao hơn để tạo hình chữ V ngược rõ hơn.", latency 4705ms (khớp tầm
+Render free tier CPU-giới hạn đã ghi nhận).

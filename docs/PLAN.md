@@ -88,11 +88,11 @@ File: `web/index.html`
 - [x] T9.5 Test camera trên **iPhone thật** qua URL HTTPS công khai — **thành công**: video hiện inline đúng (sau khi sửa 2 bug thật: native fullscreen player của iOS che overlay, và camera "im lặng" lúc Render cold-start), box + tip vẽ đúng vị trí, card kết quả đúng (`downward`, 92%, `form_ok=false`, tip đúng) — FR7 hoàn thành
 
 ## Giai đoạn 10 — Tài liệu & Slide (13/9 – 14/9)
-- [ ] T10.1 Viết lại README với kết quả/số liệu thật (không còn "đang thiết kế")
-- [ ] T10.2 Vẽ sơ đồ kiến trúc model + luồng xử lý end-to-end (mermaid hoặc excalidraw, lưu vào `docs/`)
-- [ ] T10.3 Điền đầy đủ `docs/problem_statement.md` bằng số liệu/kết quả thật thay vì kế hoạch
-- [ ] T10.4 Làm slide tóm tắt (`docs/slides/`)
-- [ ] T10.5 Đánh dấu hết các mục trong `docs/requirement_checklist.md`
+- [x] T10.1 Viết lại README với kết quả/số liệu thật (không còn "đang thiết kế")
+- [x] T10.2 Vẽ sơ đồ kiến trúc model + luồng xử lý end-to-end (mermaid hoặc excalidraw, lưu vào `docs/`) — `docs/architecture.md`
+- [x] T10.3 Điền đầy đủ `docs/problem_statement.md` bằng số liệu/kết quả thật thay vì kế hoạch — thêm mục Giai đoạn 6, 8-9
+- [x] T10.4 Làm slide tóm tắt (`docs/slides/`) — `docs/slides/summary.md` (dàn ý) + `docs/slides/presentation.html` (bản trình chiếu thật, mở trực tiếp trong trình duyệt)
+- [x] T10.5 Đánh dấu hết các mục trong `docs/requirement_checklist.md` — trừ "GitHub repo public" (cần bạn tự xác nhận) và video (Giai đoạn 11)
 
 ## Giai đoạn 11 — Video & nộp bài (15/9)
 - [ ] T11.1 Viết outline video: bài toán → dữ liệu → cách làm → kết quả → lỗi & bài học → demo chạy thật

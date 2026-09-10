@@ -49,7 +49,7 @@
       Safari/Chrome trên điện thoại chặn camera nếu không có HTTPS.
     </p>
     <div id="camWrap">
-      <video id="camVideo" playsinline autoplay muted></video>
+      <video id="camVideo" playsinline webkit-playsinline autoplay muted disablePictureInPicture disableRemotePlayback></video>
       <canvas id="camOverlay"></canvas>
     </div>
     <div class="camControls">
@@ -212,6 +212,13 @@
           video: { facingMode },
           audio: false,
         });
+        // Set qua thuộc tính JS (không chỉ HTML attribute) trước khi gán
+        // srcObject -- một số bản iOS Safari chỉ tôn trọng playsinline cho
+        // nguồn MediaStream (getUserMedia) nếu set kiểu này, không thì đẩy
+        // video vào native fullscreen player (UI có nút Live/PiP che mất
+        // canvas overlay của mình, xem docs/specs/g9-deploy-public.md).
+        camVideo.playsInline = true;
+        camVideo.muted = true;
         camVideo.srcObject = stream;
         await camVideo.play();
         resizeOverlay();

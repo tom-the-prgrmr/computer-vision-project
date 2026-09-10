@@ -233,6 +233,68 @@ review này không chạy được Docker thật, xem ghi chú Docker build ở 
    trường này (Docker Desktop engine vẫn không chạy) — cần bạn xác nhận
    qua lần Render tự rebuild sau khi push.
 
+**Deploy Render thành công — xác nhận thật qua `curl`:** `GET /health` →
+`{"status":"ok"}`, `POST /predict` ảnh thật → đúng kết quả (`tree`, conf
+0.92, `form_ok=true`), khớp Giai đoạn 7. **Latency thật cao hơn nhiều so
+với local** — 5 lần gọi liên tiếp: 8401ms, 5790ms, 6616ms, 5154ms, 4512ms
+(so với ~245ms CPU local Giai đoạn 7) — do CPU bị giới hạn/chia sẻ mạnh
+trên free tier Render, không phải lỗi code (kết quả đúng, chỉ chậm). Đã
+trao đổi, bạn chọn chấp nhận (đủ dùng cho demo nộp bài — upload ảnh ok,
+camera trực tiếp sẽ giống chụp ảnh mỗi ~5s thay vì mượt). Phương án VPS +
+Caddy (không bị throttle) vẫn giữ sẵn trong repo nếu sau này cần đổi lại.
+
+**Deploy Cloudflare Pages + CORS — xác nhận thật:** Cloudflare Pages ban
+đầu tự phát hiện `requirements.txt` ở gốc repo và cố `pip install` (do
+tính năng Pages Functions auto-detect Python) → dính đúng lỗi mediapipe
+version như Render — sửa bằng cách đổi **Root directory** của Pages
+project thành `web` (loại `requirements.txt` khỏi tầm nhìn build, không
+sửa code). Sau khi set `BACKEND_URL` trong `web/index.html` = URL Render
+thật và `ALLOWED_ORIGINS` trên Render = URL Cloudflare Pages thật
+(`https://computer-vision-project.pthieu290998.workers.dev`), verify qua
+`curl` thật:
+- `OPTIONS /predict` với `Origin` đúng domain Cloudflare Pages → header
+  `access-control-allow-origin` khớp đúng domain đó (không còn `*`).
+- `POST /predict` ảnh thật kèm `Origin` đúng → 200 OK, CORS header đúng.
+- `OPTIONS /predict` với `Origin` giả (domain lạ) → không có header
+  `access-control-allow-origin` — xác nhận CORS chặn đúng domain không
+  được phép, không phải lỗi cấu hình quá lỏng.
+
+**T9.5 — bug thật phát hiện khi test trên iPhone:** camera streaming bình
+thường nhưng không bao giờ hiện result, hoàn toàn im lặng (không có lỗi
+gì hiện ra). Chẩn đoán: Render free tier ngủ lại sau ~15 phút không dùng —
+request đầu tiên sau khi ngủ có thể cold-start rất lâu (lâu hơn nhiều so
+với số ~5-8s đã đo lúc service vừa build xong, chưa từng ngủ hẳn); trong
+lúc đó biến `inFlight` chặn đúng như thiết kế (tránh dồn request), nhưng
+không có UI nào báo "đang xử lý" — nhìn giống hệt bị treo dù thực ra chỉ
+đang chờ phản hồi chậm. Đã sửa `web/index.html`:
+- `camStatus` hiện "Đang gửi khung hình lên server..." trong lúc chờ, trả
+  về "Camera đang chạy..." khi xong.
+- Thêm `AbortController` timeout 60s — nếu thật sự treo/lỗi mạng, sẽ báo
+  rõ thay vì chờ vô hạn.
+- Thêm guard bỏ qua lượt capture nếu `videoWidth`/`videoHeight` bằng 0
+  (edge case một số trình duyệt mobile chưa kịp có metadata video).
+Chưa verify lại được trên iPhone thật sau fix (cần bạn test lại) —
+chỉ verify được cú pháp JS không lỗi qua Playwright (console sạch, chỉ có
+warning 404 favicon vô hại đã biết từ trước).
+
+**T9.5 — bug thật thứ 2 (nguyên nhân đúng, xác nhận qua screenshot thật
+từ bạn):** "im lặng không kết quả" ở trên là chẩn đoán sai hướng — nguyên
+nhân thật là iOS Safari đẩy `<video>` nguồn `getUserMedia` (MediaStream)
+vào **native fullscreen video player** (UI có nút đóng, Picture-in-Picture,
+mute, pause, badge "LIVE", thanh tua) thay vì phát inline trong trang —
+`<canvas>` overlay của mình vẫn đúng vị trí bên dưới, chỉ bị lớp UI native
+này che khuất hoàn toàn, khớp đúng mô tả "phải thoát chế độ broadcast mới
+thấy khung đỏ". Đây là bug WebKit đã biết: `playsinline` chuẩn đôi khi
+không đủ cho nguồn MediaStream trên 1 số bản iOS Safari. Đã sửa
+`web/index.html`:
+- Thêm attribute `webkit-playsinline` (cú pháp cũ, vẫn cần cho tương
+  thích), `disablePictureInPicture`, `disableRemotePlayback`.
+- Set `camVideo.playsInline = true` và `camVideo.muted = true` qua thuộc
+  tính JS (không chỉ HTML attribute) **trước** khi gán `srcObject`.
+Verify cú pháp JS qua Playwright (console sạch) — chưa verify được hành vi
+thật trên iPhone (cần bạn test lại, không có thiết bị thật ở môi trường
+này).
+
 **Việc còn lại — hoàn toàn external, cần bạn tự làm:** Git LFS cho
 `models/best.onnx`, tạo tài khoản + deploy Render, tạo tài khoản + deploy
 Cloudflare Pages, set `BACKEND_URL`/`ALLOWED_ORIGINS` chéo nhau đúng URL

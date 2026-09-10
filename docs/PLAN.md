@@ -84,8 +84,8 @@ File: `web/index.html`
 - [ ] ~~T9.1b Upload `best.onnx` lên HF Hub~~ — bỏ qua (optional): dùng Git LFS để Render build được model từ repo, không cần model repo riêng
 - [x] T9.2 Set up HTTPS thật — không cần tự làm, Render + Cloudflare Pages tự có HTTPS sẵn (phương án VPS thay thế dùng Caddy nếu cần)
 - [x] T9.3 Sửa `web/index.html` hỗ trợ tách origin FE/BE (`BACKEND_URL`), CORS trong `app/main.py` qua env `ALLOWED_ORIGINS` (không đổi từ trước)
-- [ ] T9.4 Deploy backend (Render) + frontend (Cloudflare Pages) — *code chuẩn bị xong, xem docs/specs/g9-deploy-public.md; phần tạo tài khoản + deploy thật cần bạn tự làm*
-- [ ] T9.5 Test camera trên **iPhone thật** qua URL HTTPS công khai — đây là điều kiện để coi FR7 hoàn thành
+- [x] T9.4 Deploy backend (Render) + frontend (Cloudflare Pages) — **deploy thật thành công**: `https://computer-vision-project-hl82.onrender.com` (backend) + `https://computer-vision-project.pthieu290998.workers.dev` (frontend), CORS siết đúng domain (xác nhận qua curl), `/predict` trả đúng kết quả thật (`tree`, conf 0.92). Latency free tier Render cao hơn local (~5-8s/ảnh do CPU giới hạn) — chấp nhận được, không phải bug.
+- [x] T9.5 Test camera trên **iPhone thật** qua URL HTTPS công khai — **thành công**: video hiện inline đúng (sau khi sửa 2 bug thật: native fullscreen player của iOS che overlay, và camera "im lặng" lúc Render cold-start), box + tip vẽ đúng vị trí, card kết quả đúng (`downward`, 92%, `form_ok=false`, tip đúng) — FR7 hoàn thành
 
 ## Giai đoạn 10 — Tài liệu & Slide (13/9 – 14/9)
 - [ ] T10.1 Viết lại README với kết quả/số liệu thật (không còn "đang thiết kế")

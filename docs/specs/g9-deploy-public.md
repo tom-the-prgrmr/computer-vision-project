@@ -1,7 +1,7 @@
 # Spec — g9. Deploy public (rubric: mục 7 — Deployment)
 
 **Plan source:** `docs/PLAN.md` — Giai đoạn 9
-**Status:** implemented <!-- Code xong cho phương án chính (Render + Cloudflare Pages) và phương án thay thế (VPS + Caddy); phần deploy thật + T9.5 (iPhone thật) cần bạn tự làm, xem Implementation notes -->
+**Status:** implemented <!-- Toàn bộ T9.1-T9.5 xong, xác nhận thật trên iPhone -->
 
 ## Lịch sử đổi host (đọc trước, để hiểu vì sao có 2 bộ file deploy)
 
@@ -294,6 +294,19 @@ không đủ cho nguồn MediaStream trên 1 số bản iOS Safari. Đã sửa
 Verify cú pháp JS qua Playwright (console sạch) — chưa verify được hành vi
 thật trên iPhone (cần bạn test lại, không có thiết bị thật ở môi trường
 này).
+
+**T9.5 — xác nhận thành công (screenshot thật từ bạn):** video hiện inline
+đúng trong trang (không còn bị đẩy vào native fullscreen player của iOS),
+status "Đang gửi khung hình lên server..." hiện đúng lúc chờ, kết quả hiện
+đúng — test bằng cách chĩa camera iPhone vào ảnh tư thế `downward` hiển thị
+trên màn hình laptop: model detect đúng `downward` conf 92%, box đỏ vẽ
+đúng vị trí lên người trong ảnh, tip đúng ("Đẩy hông lên cao hơn để tạo
+hình chữ V ngược rõ hơn."), card kết quả hiện đúng ("✗ Cần chỉnh form"),
+latency 4705ms hiển thị trên UI (khớp tầm latency free tier Render đã ghi
+nhận trước đó). Cả 2 bug thật phát hiện trong quá trình test T9.5 (native
+fullscreen player của iOS, và "im lặng" lúc cold-start) đều đã sửa và
+verify thành công qua thiết bị thật — **Giai đoạn 9 hoàn tất toàn bộ,
+FR7 (camera public HTTPS) đạt điều kiện hoàn thành theo REQUIREMENTS.md.**
 
 **Việc còn lại — hoàn toàn external, cần bạn tự làm:** Git LFS cho
 `models/best.onnx`, tạo tài khoản + deploy Render, tạo tài khoản + deploy

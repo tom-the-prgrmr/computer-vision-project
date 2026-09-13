@@ -95,11 +95,11 @@ File: `web/index.html`
 - [x] T10.5 Đánh dấu hết các mục trong `docs/requirement_checklist.md` — trừ "GitHub repo public" (cần bạn tự xác nhận) và video (Giai đoạn 11)
 
 ## Giai đoạn 11 — Video & nộp bài (15/9)
-- [ ] T11.1 Viết outline video: bài toán → dữ liệu → cách làm → kết quả → lỗi & bài học → demo chạy thật
-- [ ] T11.2 Quay (ưu tiên quay demo camera trực tiếp thật trên điện thoại)
-- [ ] T11.3 Edit, xuất video 5-10 phút
-- [ ] T11.4 Push lần cuối lên GitHub, xác nhận repo public
-- [ ] T11.5 Nộp trên Google Classroom kèm link GitHub
+- [x] T11.1 Viết outline video: bài toán → dữ liệu → cách làm → kết quả → lỗi & bài học → demo chạy thật — `docs/slides/script.md` (dạng checklist demo-focused, theo yêu cầu "chỉ cần video app chạy")
+- [ ] T11.2 Quay (ưu tiên quay demo camera trực tiếp thật trên điện thoại) — *cần bạn tự làm*
+- [ ] T11.3 Edit, xuất video 5-10 phút — *cần bạn tự làm*
+- [ ] T11.4 Push lần cuối lên GitHub, xác nhận repo public — *working tree đã sạch (xem Implementation notes); xác nhận Public cần bạn tự làm trên GitHub Settings*
+- [ ] T11.5 Nộp trên Google Classroom kèm link GitHub — *cần bạn tự làm*
 
 ## Buffer — nếu trễ, cắt theo thứ tự này
 1. v2 mở rộng lớp (T5.1 nhánh v2)

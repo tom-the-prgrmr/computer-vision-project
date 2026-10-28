@@ -5,6 +5,7 @@ the response. Model/business logic lives in app/service.py.
 import os
 
 from fastapi import APIRouter, File, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.schemas import PredictResponse
 from app.service import PoseDetectionService
@@ -28,7 +29,11 @@ def health() -> dict:
 @router.post("/predict", response_model=PredictResponse)
 async def predict(image: UploadFile = File(...)) -> PredictResponse:
     image_bytes = await image.read()
-    return service.predict_image(image_bytes)
+    # predict_image() is CPU-bound sync code (ONNX + MediaPipe). Called
+    # directly inside `async def` it blocks the event loop, so concurrent
+    # requests -- and even /health -- queue behind it one by one (measured
+    # on PROD, T12.9). The threadpool keeps the loop free.
+    return await run_in_threadpool(service.predict_image, image_bytes)
 
 
 @router.post("/predict_video")

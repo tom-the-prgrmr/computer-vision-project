@@ -7,9 +7,18 @@ orchestrates them with src/pose_scoring/angle_rules.py. app/controller.py
 creates one instance at import time and reuses it for every request —
 loading the ONNX session / MediaPipe is the expensive part, never re-create
 this per request.
+
+Thread safety (Giai đoạn 12, T12.10): app/controller.py runs
+predict_image() in FastAPI's threadpool so concurrent requests don't block
+the event loop. ONNX Runtime's `InferenceSession.run` is safe to call from
+several threads at once; MediaPipe `Pose` is NOT (one stateful graph), so
+landmark extraction is serialized with a lock. One shared Pose instance
+rather than one per thread: Render free tier has 512 MB RAM.
 """
 
 import io
+import os
+import threading
 import time
 
 import numpy as np
@@ -40,16 +49,27 @@ class PoseDetectionService:
         self.class_names = class_names or DEFAULT_CLASS_NAMES
         self._session: onnxruntime.InferenceSession | None = None
         self._pose = None  # mediapipe.solutions.pose.Pose, lazy-loaded
+        self._load_lock = threading.Lock()
+        self._pose_lock = threading.Lock()
 
     # ---- lazy loading (runs once, on first real request) ----
 
     def _ensure_loaded(self) -> None:
         if self._session is not None and self._pose is not None:
             return
-        self._session = onnxruntime.InferenceSession(
-            self.model_path, providers=["CPUExecutionProvider"]
-        )
-        self._pose = new_pose_model()
+        with self._load_lock:  # first requests may arrive together -- load once
+            if self._session is not None and self._pose is not None:
+                return
+            options = onnxruntime.SessionOptions()
+            # A CPU-limited container (Render) still reports the host's core
+            # count, so ORT's default thread count can oversubscribe it.
+            # Unset = ORT default.
+            if os.getenv("ORT_INTRA_OP_THREADS"):
+                options.intra_op_num_threads = int(os.environ["ORT_INTRA_OP_THREADS"])
+            self._session = onnxruntime.InferenceSession(
+                self.model_path, sess_options=options, providers=["CPUExecutionProvider"]
+            )
+            self._pose = new_pose_model()
 
     # ---- the two model calls ----
 
@@ -61,7 +81,8 @@ class PoseDetectionService:
         """`crop`: RGB, HWC (slice trực tiếp từ `image` ở predict_image(),
         đã là RGB sẵn -- extract_landmarks_px() nhận thẳng RGB, không cần
         convert gì thêm, xem src/pose_scoring/landmark_extraction.py)."""
-        return extract_landmarks_px(crop, self._pose)
+        with self._pose_lock:
+            return extract_landmarks_px(crop, self._pose)
 
     # ---- public API used by app/controller.py ----
 

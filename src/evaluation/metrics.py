@@ -4,20 +4,25 @@ Ultralytics writes a plotted `confusion_matrix.png` as a side effect of
 `model.val()`, but doesn't expose "which class pairs get confused most" as
 plain numbers. These two functions fill that gap for
 notebooks/03_evaluation_error_analysis.ipynb (T4.1-T4.2): run validation
-once, then rank the off-diagonal cells.
+once, then rank the off-diagonal cells. `per_image_errors()` lists which
+images are wrong and how (Giai đoạn 12 error analysis on the clean split).
 """
+
+from pathlib import Path
+
 
 import numpy as np
 from ultralytics import YOLO
 
 
-def load_confusion_matrix(model_path: str, data_yaml: str) -> tuple[np.ndarray, list[str]]:
+def load_confusion_matrix(model_path: str, data_yaml: str, split: str = "val") -> tuple[np.ndarray, list[str]]:
     """Run validation and return the raw confusion matrix + class names.
 
     Args:
         model_path: path to a trained checkpoint (e.g.
             "runs/detect/yolov8n_v1_baseline/weights/best.pt").
         data_yaml: path to the YOLO data.yaml used for validation.
+        split: which data.yaml split to evaluate ("val" or "test").
 
     Returns:
         (matrix, class_names) — matrix is (nc+1, nc+1): row/col `i` is
@@ -31,7 +36,7 @@ def load_confusion_matrix(model_path: str, data_yaml: str) -> tuple[np.ndarray, 
         on the y-axis/rows).
     """
     model = YOLO(model_path)
-    val_results = model.val(data=data_yaml)
+    val_results = model.val(data=data_yaml, split=split)
     matrix = val_results.confusion_matrix.matrix
     class_names = [val_results.names[i] for i in range(len(val_results.names))]
     class_names.append("background")
@@ -72,3 +77,71 @@ def top_confused_pairs(
                 pairs.append((class_names[true_idx], class_names[pred_idx], count))
     pairs.sort(key=lambda p: p[2], reverse=True)
     return pairs[:k]
+
+
+def _iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
+    inter_w = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    inter_h = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = inter_w * inter_h
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union > 0 else 0.0
+
+
+def per_image_errors(
+    model: YOLO,
+    images_dir: Path,
+    labels_dir: Path,
+    class_names: list[str],
+    conf: float = 0.25,
+    iou_threshold: float = 0.5,
+) -> list[dict]:
+    """Predict every image once and list the ones with at least one error.
+
+    Each ground-truth box is greedily matched to the highest-confidence
+    unused prediction with IoU >= iou_threshold:
+      - matched, same class  -> correct
+      - matched, other class -> "wrong_class" (true -> predicted)
+      - unmatched            -> "missed" (false negative)
+    Predictions left unmatched -> "spurious" (false positive).
+
+    Returns one dict per image that has any error: {"path", "errors":
+    [(kind, true_cls, pred_cls, conf)], "result"} -- `result` is kept so a
+    caller can plot it (`result.plot()`) without predicting again.
+    """
+    image_paths = sorted(p for p in Path(images_dir).iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    erroneous = []
+    for image_path in image_paths:
+        result = model.predict(source=str(image_path), conf=conf, verbose=False)[0]
+        h, w = result.orig_shape
+        truths = []
+        label_path = Path(labels_dir) / f"{image_path.stem}.txt"
+        if label_path.exists():
+            for line in label_path.read_text().splitlines():
+                parts = line.split()
+                if len(parts) == 5:
+                    cls_id, x, y, bw, bh = int(parts[0]), *map(float, parts[1:])
+                    truths.append((cls_id, ((x - bw / 2) * w, (y - bh / 2) * h, (x + bw / 2) * w, (y + bh / 2) * h)))
+        preds = [
+            (int(c), float(s), tuple(map(float, box)))
+            for c, s, box in zip(result.boxes.cls, result.boxes.conf, result.boxes.xyxy)
+        ]
+
+        errors, used = [], set()
+        for true_id, true_box in truths:
+            candidates = [
+                (score, i) for i, (_, score, box) in enumerate(preds) if i not in used and _iou(box, true_box) >= iou_threshold
+            ]
+            if not candidates:
+                errors.append(("missed", class_names[true_id], None, 0.0))
+                continue
+            score, i = max(candidates)
+            used.add(i)
+            if preds[i][0] != true_id:
+                errors.append(("wrong_class", class_names[true_id], class_names[preds[i][0]], score))
+        for i, (pred_id, score, _) in enumerate(preds):
+            if i not in used:
+                errors.append(("spurious", None, class_names[pred_id], score))
+
+        if errors:
+            erroneous.append({"path": image_path, "errors": errors, "result": result})
+    return erroneous

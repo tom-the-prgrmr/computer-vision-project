@@ -101,6 +101,26 @@ File: `web/index.html`
 - [ ] T11.4 Push lần cuối lên GitHub, xác nhận repo public — *working tree đã sạch (xem Implementation notes); xác nhận Public cần bạn tự làm trên GitHub Settings*
 - [ ] T11.5 Nộp trên Google Classroom kèm link GitHub — *cần bạn tự làm*
 
+## Giai đoạn 12 — Sửa rò rỉ dữ liệu & đo hiệu năng trên PROD
+
+Phát hiện sau Giai đoạn 11: 59/101 ảnh test và 122/203 ảnh valid của
+Roboflow v1 là bản sao (chủ yếu lật ngang) của ảnh train. Vì vậy mAP 0.99
+và kết luận Giai đoạn 4-5 bị thổi phồng. Benchmark performance Giai đoạn 7
+đo trên GPU Colab, không phải PROD. Chi tiết, số liệu đo sơ bộ:
+`docs/specs/g12-sua-ro-ri-va-do-prod.md`.
+
+- [x] T12.1 `src/data/dedup_split.py`: phát hiện nhóm ảnh trùng (tên gốc + lớp, dHash 16×16 có tính lật ngang, ORB + RANSAC cho bản crop/zoom), báo cáo rò rỉ trên split gốc — 1013 ảnh → 552 nhóm độc lập
+- [x] T12.2 Chia lại split theo nhóm (70/15/15, phân tầng theo lớp) → `data/processed/yoga_v1_clean/` (703/156/154 ảnh), 0 nhóm cắt ngang split; manifest commit ở `data/splits/`
+- [x] T12.3 Đo lại model cũ trên 42 ảnh test sạch của split gốc — đo local bằng `best.onnx`: mAP@0.5 0.994→0.991, mAP@0.5:0.95 0.767→0.716 (101 ảnh → 42 ảnh sạch); notebook 06 có cell đo lại bằng `.pt` trên Colab
+- [ ] T12.4 Mở rộng tập OOD lên ≥ 8 ảnh/lớp đủ 5 lớp, có ảnh tự chụp điện thoại — *cần bạn tự làm*
+- [ ] T12.5 Retrain baseline trên split sạch → `yolov8n_v1_clean_baseline` — *Colab*
+- [ ] T12.6 Error analysis trên lỗi thật (confusion matrix, EigenCAM trên ảnh sai, OOD accuracy) — *Colab*
+- [ ] T12.7 Một vòng cải tiến nhắm đúng pattern lỗi → `yolov8n_v1_clean_feedback`, bảng trước/sau (làm lại rubric mục 5) — *Colab*
+- [ ] T12.8 Export ONNX model thắng, thay `models/best.onnx`, redeploy Render
+- [x] T12.9 `scripts/load_test.py`: stress test PROD — "before" đo xong (`docs/perf/`): server ~4.8s/ảnh, client p50 5.2s→21.7s từ 1→8 đồng thời, tới 25% lỗi (502/timeout). *Cold start chưa đo bằng script*
+- [ ] T12.10 Sửa route `predict` chặn event loop (sync work trong `async def`), redeploy, đo lại T12.9 → bảng trước/sau — *code đã sửa + đo local (4 đồng thời: p50 360→158 ms, 10.5→21.3 req/s); còn deploy Render + đo "after" trên PROD*
+- [ ] T12.11 Cập nhật `problem_statement.md` (giữ lịch sử, đánh dấu kết luận cũ đã bị thay thế), README, slide, checklist mục 4/5/7
+
 ## Buffer — nếu trễ, cắt theo thứ tự này
 1. v2 mở rộng lớp (T5.1 nhánh v2)
 2. Quantization + benchmark sâu (T7.3)

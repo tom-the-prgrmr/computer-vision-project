@@ -13,7 +13,14 @@ torchvision>=0.17
 # "every 0.10.x has solutions" is false; only pin to a build verified to
 # have it. If Colab/Windows can't resolve this exact version, re-verify
 # `hasattr(mediapipe, "solutions")` before loosening the pin again.
-mediapipe==0.10.21
+#
+# Marker `python_version < "3.13"`: 0.10.21 has no wheel for Python 3.13+
+# (only 0.10.30+ do, and those lack `solutions`). Colab moved to 3.13 in
+# late 2026 and `pip install -r requirements.txt` aborted on this line,
+# installing NOTHING (hence "No module named 'ultralytics'"). No notebook
+# needs mediapipe (only app/ + src/pose_scoring/), so skip it there. Prod
+# Docker image is python:3.11-slim, so the pin still applies where it matters.
+mediapipe==0.10.21; python_version < "3.13"
 
 # Data
 roboflow>=1.1            # download bbox-annotated yoga pose dataset

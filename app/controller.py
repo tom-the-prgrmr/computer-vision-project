@@ -2,6 +2,7 @@
 the response. Model/business logic lives in app/service.py.
 """
 
+import asyncio
 import os
 
 from fastapi import APIRouter, File, UploadFile
@@ -20,6 +21,11 @@ service = PoseDetectionService(
     conf_threshold=float(os.getenv("DETECTOR_CONF_THRESHOLD", "0.5")),
 )
 
+# Images processed at once; the rest wait here without holding a thread or a
+# decoded image. Uncapped, 8 concurrent requests took the whole process down
+# on Render (T12.10, docs/perf/).
+_predict_slots = asyncio.Semaphore(int(os.getenv("MAX_CONCURRENT_PREDICTIONS", "2")))
+
 
 @router.get("/health")
 def health() -> dict:
@@ -33,7 +39,8 @@ async def predict(image: UploadFile = File(...)) -> PredictResponse:
     # directly inside `async def` it blocks the event loop, so concurrent
     # requests -- and even /health -- queue behind it one by one (measured
     # on PROD, T12.9). The threadpool keeps the loop free.
-    return await run_in_threadpool(service.predict_image, image_bytes)
+    async with _predict_slots:
+        return await run_in_threadpool(service.predict_image, image_bytes)
 
 
 @router.post("/predict_video")

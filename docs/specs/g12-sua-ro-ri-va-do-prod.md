@@ -304,13 +304,49 @@ Server luôn ~4.8s/ảnh, client tăng tuyến tính theo số đồng thời �
 (lần ping `/health` đầu tiên treo > 120s khi service đang ngủ — chưa đủ chính xác để
 ghi số).
 
-**T12.10 — sửa xong ở code, chưa deploy.** Đo local (máy dev 6 nhân, 8 request, cùng ảnh):
-code cũ ở 4 đồng thời p50 360 ms / 10.5 req/s → code mới p50 158 ms / 21.3 req/s
-(server time/ảnh không đổi ~75–90 ms; kết quả dự đoán không đổi). **Kỳ vọng thật cho
-Render free:** throughput gần như **không** tăng được — CPU bị giới hạn nên ~0.2 req/s
-là trần (1 / 4.8s). Thứ có thể cải thiện ở PROD là event loop không bị chặn (giả
-thuyết: 502 do health check/proxy của Render chờ quá lâu khi loop bị chặn → cần đo lại
-để xác nhận, không khẳng định trước).
+**T12.10 — đã deploy, đo "after" trên PROD (2026-10-28 17:57 UTC),**
+`docs/perf/prod_load_test_20261028_1753_after.md`, cùng cấu hình đo với "before":
+
+| Đồng thời | Before: lỗi / p95 / req/s | After (threadpool): lỗi / p95 / req/s |
+|---|---|---|
+| 1 | 0% / 6.3s / 0.19 | 5% / 6.6s / 0.18 |
+| 2 | 0% / 10.9s / 0.20 | 0% / 8.5s / 0.28 |
+| 4 | 10% / 42.1s / 0.21 | **0% / 13.3s / 0.37** |
+| 8 | 25% / 49.1s / 0.18 | **100% HTTP 502** |
+
+- Dự đoán "throughput không tăng" ở trên **sai**: ở 2–4 đồng thời throughput tăng
+  1.4–1.8× và p95 giảm 42s → 13s (Render free vẫn có chút CPU song song). Server p50
+  tăng 4.9s → 9.7s ở 4 đồng thời nghĩa là các request đang **chạy song song và chia
+  CPU**, không còn xếp hàng nối tiếp.
+- Ở 8 đồng thời thì **tệ hơn before**: 20/20 lỗi 502, 8 request đầu lỗi đồng loạt sau
+  ~10.3s, các request sau lỗi ngay ~300 ms → process bị kill rồi restart (không phải
+  timeout proxy). Giả thuyết hết RAM 512 MB. **Kiểm chứng local** (uvicorn thật, 8
+  đồng thời × 24 request, đo peak RSS cả cây tiến trình):
+
+| Cap số ảnh xử lý cùng lúc | Peak RSS, ảnh test 81 KB (740×1159) | Peak RSS, ảnh điện thoại 12 MP | req/s local |
+|---|---|---|---|
+| không giới hạn | 555 MB | 1032 MB | 21.1 |
+| 8 | 566 MB | 905 MB | 20.0 |
+| 4 | 433 MB | 714 MB | 21.5 |
+| **2 (mặc định mới)** | **362 MB** | **510 MB** | 19.9 |
+| 1 | 327 MB | 442 MB | 12.8 |
+
+  Base RSS ~287 MB (ONNX + MediaPipe đã nạp). Mỗi ảnh đang xử lý tốn ~35 MB (ảnh nhỏ)
+  tới ~150 MB (12 MP) — vượt 512 MB ngay từ ~6 ảnh nhỏ hoặc 2 ảnh điện thoại. Số Windows,
+  Linux trên Render có thể lệch, nhưng cùng bậc.
+- **Sửa:** `app/controller.py` thêm `asyncio.Semaphore` quanh `run_in_threadpool`
+  (env `MAX_CONCURRENT_PREDICTIONS`, mặc định 2). Request thứ 3 trở đi chờ ở semaphore
+  — không giữ thread, không giữ ảnh đã giải mã. Chọn 2 vì giữ gần hết throughput và
+  nằm dưới 512 MB với ảnh thường; với ảnh 12 MP vẫn sát ngưỡng → nếu Render log lại
+  thấy OOM thì đặt env `MAX_CONCURRENT_PREDICTIONS=1`. Giảm kích thước ảnh trước khi
+  suy luận (ảnh 12 MP → ~1280 px) sẽ hạ hẳn peak nhưng phải scale box trả về cho
+  web — để lại làm việc sau.
+- 1 lỗi 502 lẻ ở mức 1 đồng thời (request thứ 4, sau 5.2s) **chưa giải thích được** — không
+  phải OOM (chỉ 1 ảnh đang xử lý); theo dõi ở lần đo 3.
+- **Cold start chưa đo được thật:** lần chạy "after" `/health` trả 200 sau 0.3s
+  (service đang thức), 7.8s ở `/predict` đầu chỉ là thời gian nạp model lần đầu. Cần
+  chạy lại script sau ≥ 15 phút không có traffic.
+- Cần **deploy lại + đo lần 3** (cùng cấu hình) để xác nhận cap 2 hết 502 ở 8 đồng thời.
 
 **Smoke test:** `dedup_split` chạy thật trên data thật (2 lần, manifest tái tạo giống
 nhau); cell notebook 06 không cần GPU (T12.2, T12.3, `per_image_errors`, OOD) chạy thật
@@ -318,5 +354,12 @@ nhau); cell notebook 06 không cần GPU (T12.2, T12.3, `per_image_errors`, OOD)
 1 ảnh lỗi), đã sửa và chạy lại; OOD khớp Giai đoạn 5 (17/18, cùng ảnh sai). Cell train
 (T12.5, T12.7) + EigenCAM chỉ kiểm tra cú pháp — cần GPU Colab.
 
-**Deferred / cần bạn:** T12.4 (ảnh OOD), T12.5–T12.7 (Colab), T12.8 (export + deploy),
-T12.10 phần deploy + đo "after", đo cold start, T12.11 (docs).
+**T12.4 — tập OOD mở rộng (một phần):** 27 ảnh Wikimedia Commons (CC0 / PD / CC BY /
+CC BY-SA, ghi công trong `data/ood_samples/commons_sources.csv`), chọn tay sau khi xem
+từng ảnh, kiểm trùng với cả 1013 ảnh Roboflow bằng đúng tín hiệu của `dedup_split.py`
+(không ảnh nào dHash ≤ 12; 4 ảnh vượt ngưỡng ORB đã xem tận mắt — khớp giả do ảnh scan
+nhiễu). Tổng 45 ảnh, 8–10/lớp, đủ 5 lớp. **Còn thiếu ảnh tự chụp điện thoại.**
+
+**Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.5–T12.7 (Colab), T12.8 (export +
+deploy), T12.10 deploy lại + đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút
+ngủ, T12.11 (docs).

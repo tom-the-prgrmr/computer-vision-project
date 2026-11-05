@@ -352,6 +352,24 @@ def apply_manifest(dataset_dir: Path, manifest: list[dict[str, str]], out_dir: P
     )
 
 
+def write_all_data_yaml(out_dir: Path = OUT_DIR) -> Path:
+    """data.yaml that trains on ALL three splits of an applied manifest --
+    for the final deployment model only (T12.8), after the config has been
+    evaluated on the clean split. `val` points at the test split just so
+    Ultralytics has something to validate on: those images are in train, so
+    the numbers it prints are NOT a test score."""
+    original = (out_dir / "data.yaml").read_text(encoding="utf-8")
+    header = original[original.index("nc:") :]
+    yaml_path = out_dir / "data_all.yaml"
+    yaml_path.write_text(
+        f"path: {out_dir.resolve().as_posix()}\n"
+        "train:\n  - train/images\n  - valid/images\n  - test/images\n"
+        f"val: test/images\n{header}",
+        encoding="utf-8",
+    )
+    return yaml_path
+
+
 def summarize(manifest: list[dict[str, str]]) -> None:
     groups_per_split: dict[str, set[str]] = defaultdict(set)
     classes_per_split: dict[str, Counter] = defaultdict(Counter)

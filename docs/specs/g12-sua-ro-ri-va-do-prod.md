@@ -416,6 +416,33 @@ Ghi chú môi trường: Colab đã lên Python 3.13 nên `mediapipe==0.10.21` k
 đó — `requirements.txt` thêm marker `python_version < "3.13"` (commit `80ee3fb`). File
 `.pt` của cả hai run chỉ nằm trên Drive (`runs/detect/`), chưa có ở local.
 
+**T12.8 — đã export ở local, CHƯA deploy (chờ quyết định):** `models/best.pt`
+(`yolov8n_v1_clean_baseline`, xác nhận qua `train_args` trong checkpoint) →
+`src/models/export.py::export_onnx()` → `models/best.onnx` (sha256 `42eda24f…`, bản cũ
+`be816f0c…`). Kiểm tra bản ONNX mới, CPU:
+- Test sạch 154 ảnh: mAP@0.5 0.985, mAP@0.5:0.95 0.765, P 0.958, R 0.966 (`.pt`/GPU trên
+  Colab: 0.991 / 0.824 — cùng mức lệch ONNX/CPU so với `.pt` như đã thấy ở T12.3).
+- Qua đúng đường chạy của app (`PoseDetectionService.predict_image`) trên 45 ảnh OOD:
+  **model mới 37/45 (82.2%, khớp Colab), model cũ đang ở PROD 40/45 (88.9%)**. 3 ảnh
+  khác nhau đều là `plank` (cũ đúng, mới → tree / shoulderstand / không phát hiện).
+- Giải thích hợp lý (chưa kiểm chứng): model cũ train trên split rò rỉ nên đã thấy gần
+  như toàn bộ 552 nhóm ảnh; model mới chỉ thấy 383 nhóm (70%). Điểm test của model cũ
+  không tin được, nhưng bản thân model lại học từ nhiều ảnh khác nhau hơn. Chênh 3/45
+  ảnh là mẫu nhỏ.
+- Hệ quả: thay model mới lên PROD có thể làm người dùng thật nhận kết quả kém hơn một
+  chút. Lựa chọn: (a) deploy model mới như spec; (b) giữ model cũ ở PROD, chỉ dùng model
+  mới để báo cáo số đo sạch; (c) train thêm bản "final" trên toàn bộ 1013 ảnh với đúng
+  config đã được đánh giá, deploy bản đó (không có test set riêng — số báo cáo vẫn là
+  của `clean_baseline`).
+
+**Quyết định (2026-11-05): chọn (c).** `models/best.onnx` đã khôi phục về bản cũ (PROD
+không đổi cho tới khi có bản final). Thêm `write_all_data_yaml()` trong
+`src/data/dedup_split.py` (train = cả 3 split, 1013 ảnh; `val` trỏ vào test chỉ để
+Ultralytics chạy được — không phải điểm test) và 2 cell cuối notebook 06: train
+`yolov8n_v1_final_alldata` đúng config `clean_baseline`, lấy `last.pt` (không chọn
+"best" theo val đã nằm trong train), đo OOD. Deploy bản này **chỉ khi** OOD qua app
+không kém model cũ (40/45); nếu kém thì giữ model cũ và ghi đúng như vậy.
+
 **Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.8 (export
 `yolov8n_v1_clean_baseline` + deploy — export ONNX không cần GPU), T12.10 deploy lại +
 đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút ngủ, T12.11 (docs).

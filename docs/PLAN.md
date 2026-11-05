@@ -111,12 +111,12 @@ và kết luận Giai đoạn 4-5 bị thổi phồng. Benchmark performance Gia
 
 - [x] T12.1 `src/data/dedup_split.py`: phát hiện nhóm ảnh trùng (tên gốc + lớp, dHash 16×16 có tính lật ngang, ORB + RANSAC cho bản crop/zoom), báo cáo rò rỉ trên split gốc — 1013 ảnh → 552 nhóm độc lập
 - [x] T12.2 Chia lại split theo nhóm (70/15/15, phân tầng theo lớp) → `data/processed/yoga_v1_clean/` (703/156/154 ảnh), 0 nhóm cắt ngang split; manifest commit ở `data/splits/`
-- [x] T12.3 Đo lại model cũ trên 42 ảnh test sạch của split gốc — đo local bằng `best.onnx`: mAP@0.5 0.994→0.991, mAP@0.5:0.95 0.767→0.716 (101 ảnh → 42 ảnh sạch); notebook 06 có cell đo lại bằng `.pt` trên Colab
+- [x] T12.3 Đo lại model cũ trên 42 ảnh test sạch của split gốc — đo local bằng `best.onnx`: mAP@0.5 0.994→0.991, mAP@0.5:0.95 0.767→0.716 (101 ảnh → 42 ảnh sạch); đo lại bằng `.pt` trên Colab (notebook 06): mAP@0.5 0.9939→0.9950, mAP@0.5:0.95 0.8333→0.7741
 - [ ] T12.4 Mở rộng tập OOD lên ≥ 8 ảnh/lớp đủ 5 lớp, có ảnh tự chụp điện thoại — *đã thêm 27 ảnh Wikimedia Commons (45 ảnh, 8–10/lớp, đủ 5 lớp, đã kiểm trùng với Roboflow); còn thiếu ảnh tự chụp điện thoại*
-- [ ] T12.5 Retrain baseline trên split sạch → `yolov8n_v1_clean_baseline` — *Colab*
-- [ ] T12.6 Error analysis trên lỗi thật (confusion matrix, EigenCAM trên ảnh sai, OOD accuracy) — *Colab*
-- [ ] T12.7 Một vòng cải tiến nhắm đúng pattern lỗi → `yolov8n_v1_clean_feedback`, bảng trước/sau (làm lại rubric mục 5) — *Colab*
-- [ ] T12.8 Export ONNX model thắng, thay `models/best.onnx`, redeploy Render
+- [x] T12.5 Retrain baseline trên split sạch → `yolov8n_v1_clean_baseline` — test mới (154 ảnh): mAP@0.5 0.9906, mAP@0.5:0.95 0.8242, P 0.953, R 0.987
+- [x] T12.6 Error analysis trên lỗi thật (confusion matrix, EigenCAM trên ảnh sai, OOD accuracy) — 7/154 ảnh test lỗi, đều là shoulderstand (ảnh đồ hoạ, nhiều người chồng lấn, người nhỏ ngược sáng); OOD 82.2% (37/45), 6/8 ảnh sai là plank (side plank, cảnh ngoài trời nhiều người)
+- [x] T12.7 Một vòng cải tiến nhắm đúng pattern lỗi → `yolov8n_v1_clean_feedback`, bảng trước/sau (làm lại rubric mục 5) — đổi sang `yolov8s.pt`: **không cải thiện** (mAP@0.5:0.95 0.8242→0.8156, ảnh test lỗi 7→10, OOD 82.2%→71.1%); ghi đúng kết quả, model thắng vẫn là `yolov8n_v1_clean_baseline`
+- [ ] T12.8 Export ONNX model thắng (`yolov8n_v1_clean_baseline`), thay `models/best.onnx`, redeploy Render
 - [x] T12.9 `scripts/load_test.py`: stress test PROD — "before" đo xong (`docs/perf/`): server ~4.8s/ảnh, client p50 5.2s→21.7s từ 1→8 đồng thời, tới 25% lỗi (502/timeout). *Cold start chưa đo bằng script*
 - [ ] T12.10 Sửa route `predict` chặn event loop (sync work trong `async def`), redeploy, đo lại T12.9 → bảng trước/sau — *threadpool đã deploy + đo "after": 4 đồng thời 10% lỗi/p95 42s → 0%/13s, nhưng 8 đồng thời 100% 502 (process chết, hết RAM 512 MB — xác nhận local: peak 566 MB không cap vs 362 MB cap 2). Đã thêm cap `MAX_CONCURRENT_PREDICTIONS=2`; còn deploy lại + đo lần 3 + đo cold start*
 - [ ] T12.11 Cập nhật `problem_statement.md` (giữ lịch sử, đánh dấu kết luận cũ đã bị thay thế), README, slide, checklist mục 4/5/7

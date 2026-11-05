@@ -360,6 +360,62 @@ từng ảnh, kiểm trùng với cả 1013 ảnh Roboflow bằng đúng tín hi
 (không ảnh nào dHash ≤ 12; 4 ảnh vượt ngưỡng ORB đã xem tận mắt — khớp giả do ảnh scan
 nhiễu). Tổng 45 ảnh, 8–10/lớp, đủ 5 lớp. **Còn thiếu ảnh tự chụp điện thoại.**
 
-**Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.5–T12.7 (Colab), T12.8 (export +
-deploy), T12.10 deploy lại + đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút
-ngủ, T12.11 (docs).
+**T12.3/T12.5–T12.7 — kết quả Colab (2026-11-05, Tesla T4, Ultralytics 8.4.202,
+torch 2.11),** output đầy đủ nằm trong `notebooks/06_clean_split_retrain.ipynb`:
+
+*T12.3 — model cũ `yolov8n_v1_baseline`, đo bằng `.pt`:*
+
+| Test gốc | mAP@0.5 | mAP@0.5:0.95 | P | R |
+|---|---|---|---|---|
+| đủ 101 ảnh (có rò rỉ) | 0.9939 | 0.8333 | 0.9865 | 0.9770 |
+| 42 ảnh sạch | 0.9950 | 0.7741 | 0.9640 | 0.9772 |
+
+Khớp kết luận đã đo local bằng ONNX: rò rỉ thổi phồng mAP@0.5:0.95 ~5.9pp và precision
+~2.3pp; mAP@0.5 và recall gần như không đổi.
+
+*T12.5 — `yolov8n_v1_clean_baseline`* (50 epoch, batch 16, 0.197 giờ): valid mAP@0.5
+0.995 / mAP@0.5:0.95 0.845. **Test mới (154 ảnh, 159 box): mAP@0.5 0.9906, mAP@0.5:0.95
+0.8242, P 0.9526, R 0.9872.** Per-class mAP@0.5:0.95: bridge 0.884, downward 0.881,
+plank 0.816, shoulderstand 0.789, tree 0.751.
+
+*T12.6 — error analysis:*
+- Test, conf 0.5: **7/154 ảnh có lỗi** (5 ảnh gốc; 2 trong số đó có 2 bản lật), **tất cả
+  là `shoulderstand`**: 4 bỏ sót, 3 nhầm lớp (2 → bridge, 1 → downward), 2 box thừa.
+  Confusion matrix: shoulderstand → bridge 3, shoulderstand → downward 2.
+- Theo ảnh: ảnh đồ hoạ/minh hoạ 3/7 (silhouette bị bỏ sót; hình vẽ nằm kê hông, chân
+  dựng thẳng bị gọi bridge 0.69/0.89 — nhãn mơ hồ); nhiều người chồng lấn 2/7 (2 người
+  bị gộp 1 box; box thừa đè lên người chính); người nhỏ ngược sáng trước cửa sổ 2/7.
+- EigenCAM trên ảnh sai: ở ảnh nhiều người, kích hoạt trải trên nền/trần thay vì người;
+  ở hình vẽ chỉ một dải hẹp quanh hông, không phủ chân. EigenCAM thô, chỉ là gợi ý.
+- **OOD: 37/45 = 82.2%.** 8 ảnh sai: **plank 6/9**, bridge 1/8, tree 1/9. Plank sai do
+  side plank (→ tree 0.77, → shoulderstand 0.60), 1 ảnh nhãn plank nhưng người đứng một
+  chân tựa tường (→ tree 0.80, **nên xem lại nhãn ảnh OOD này**), và 3 ảnh ngoài trời
+  người nhỏ/nhiều người/nền rối (2 không phát hiện, 1 → bridge 0.53). Bridge: ảnh scan
+  đen trắng. Tree: người rất nhỏ ở xa.
+- Lỗi test (toàn shoulderstand) và lỗi OOD (chủ yếu plank) rơi vào lớp khác nhau → test
+  cùng phân bố không đại diện cho lỗi người dùng thật. Pattern chung: người nhỏ/xa, cảnh
+  nhiều người, ảnh/biến thể tư thế không có trong train.
+
+*T12.7 — vòng cải tiến:* thay đổi duy nhất `yolov8n.pt` → `yolov8s.pt`
+(`OBSERVED_ISSUE = "loose_boxes_bigger_model"`), cùng batch 16, 50 epoch, 0.266 giờ.
+
+| Run | mAP@0.5 (test) | mAP@0.5:0.95 (test) | P | R | Ảnh test có lỗi (conf 0.5) | OOD accuracy | mAP@0.5:0.95 (valid) |
+|---|---|---|---|---|---|---|---|
+| `yolov8n_v1_clean_baseline` (trước) | 0.9906 | 0.8242 | 0.953 | 0.987 | 7 | 82.2% (37/45) | 0.845 |
+| `yolov8n_v1_clean_feedback` (sau) | 0.9883 | 0.8156 | 0.970 | 0.957 | 10 | 71.1% (32/45) | 0.852 |
+
+**Không cải thiện** — kém hơn ở cả 4 chỉ số test/OOD dù valid nhỉnh hơn 0.7pp. Giả thuyết
+(chưa kiểm chứng): model ~3.5 lần tham số (11.1M so với 3.1M) khớp quá mức với 703 ảnh
+train. Giới hạn: 1 seed, test chỉ 88 nhóm độc lập nên chênh dưới 1pp mAP nằm trong
+nhiễu; chênh OOD là 5/45 ảnh. `loose_boxes_bigger_model` là lựa chọn dự phòng, không
+nhắm pattern cụ thể nào ở T12.6 (lỗi quan sát được không phải do box lỏng) — nếu làm
+thêm vòng 2 thì `small_person` khớp pattern hơn; khi đó báo cáo cả hai vòng, không thay
+thế vòng này. **Run thắng: `yolov8n_v1_clean_baseline`** → export ở T12.8.
+
+Ghi chú môi trường: Colab đã lên Python 3.13 nên `mediapipe==0.10.21` không cài được ở
+đó — `requirements.txt` thêm marker `python_version < "3.13"` (commit `80ee3fb`). File
+`.pt` của cả hai run chỉ nằm trên Drive (`runs/detect/`), chưa có ở local.
+
+**Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.8 (export
+`yolov8n_v1_clean_baseline` + deploy — export ONNX không cần GPU), T12.10 deploy lại +
+đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút ngủ, T12.11 (docs).

@@ -30,7 +30,8 @@ Rule-based angle scoring ── so góc khớp với ngưỡng chuẩn từng t�
 
 ```
 data/               raw/processed data (gitignored, xem scripts/download_data.sh)
-notebooks/          01 data exploration, 02 train, 03 eval & error analysis, 04 export
+notebooks/          01 data exploration, 02 train, 03 eval & error analysis, 04 export,
+                    05 OOD (cũ), 06 split sạch + retrain + feedback loop (Giai đoạn 12)
 src/
   data/             bootstrap_bbox.py — sinh bbox cho v2 (15-20 lớp) từ Yoga-82
   models/           train.py — wrapper train YOLOv8
@@ -53,17 +54,20 @@ pip install -r requirements.txt
 ## Chạy lại từ đầu
 
 1. **Tải dữ liệu**: `scripts/download_data.sh` (Roboflow v1, 5 lớp)
-2. **Train**: `notebooks/02_train_detector.ipynb` (gọi `train()` từ
-   `src/models/train.py` — không có CLI riêng, chỉ dùng qua notebook)
-3. **Eval / error analysis**: `notebooks/03_evaluation_error_analysis.ipynb`
+2. **Chia lại split sạch**: `python -m src.data.dedup_split data/raw/yoga_v1`
+   (áp manifest đã commit ở `data/splits/` → `data/processed/yoga_v1_clean/`)
+3. **Train + eval + feedback loop trên split sạch**:
+   `notebooks/06_clean_split_retrain.ipynb` (Colab GPU). Notebook 02/03/05
+   giữ lại làm lịch sử, chúng dùng split gốc bị rò rỉ.
 4. **Export ONNX**: `notebooks/04_export_onnx.ipynb`
-5. **Serve API + web demo**: `uvicorn app.main:app --reload` — 1 lệnh duy
+5. **Stress test bản deploy**: `python scripts/load_test.py --url <URL backend>`
+6. **Serve API + web demo**: `uvicorn app.main:app --reload` — 1 lệnh duy
    nhất, phục vụ cả `GET /` (trang demo, mount từ `web/`) lẫn `/predict`
    cùng process, mở `http://localhost:8000/`. (Cách cũ chạy 2 server tách
    — `python -m http.server 8080 --directory web` cho web + uvicorn riêng
    cho API — vẫn dùng được cho local dev nếu muốn, xem
    `docs/specs/g8-web-demo.md`.)
-6. **Web demo**: tab "Camera trực tiếp" (chính, dùng camera điện
+7. **Web demo**: tab "Camera trực tiếp" (chính, dùng camera điện
    thoại/iPhone qua `getUserMedia`) hoặc tab "Upload ảnh" (test nhanh).
    `API_BASE` trong `web/index.html` tự nhận diện môi trường, không cần sửa
    tay. ⚠️ Camera trên điện thoại **chỉ hoạt động qua HTTPS** (hoặc
@@ -108,15 +112,22 @@ xem `docker-compose.yml`/`Caddyfile` + chi tiết trong
 Số liệu thật (không phải ước tính), chi tiết đầy đủ ở
 [`docs/problem_statement.md`](docs/problem_statement.md):
 
+⚠️ **Giai đoạn 12 thay thế các kết luận Giai đoạn 2-5:** split gốc của Roboflow bị rò
+rỉ (59/101 ảnh test là bản lật/crop của ảnh train), nên số liệu cũ bị thổi phồng. Các
+số dưới đây đo trên split đã chia lại theo nhóm ảnh trùng.
+
 | Giai đoạn | Kết quả |
 |---|---|
-| Training baseline | YOLOv8n, 5 lớp, seed=42, epochs=50 — mAP thật xem `docs/problem_statement.md` mục "Training baseline" |
-| Ablation | Augmentation ON thắng OFF — xem mục "Ablation" |
-| Error analysis | Confusion matrix + EigenCAM, không có cặp lớp bị nhầm trong tập test |
-| Feedback loop (OOD) | 17/18 = **94.4%** trên ảnh ngoài dataset (Kaggle) — đủ robust, không cần retrain |
+| Data | 1013 ảnh, chỉ 552 nhóm ảnh độc lập; chia lại 703/156/154, không nhóm nào nằm ở hai split (`src/data/dedup_split.py`) |
+| Training | YOLOv8n, seed 42, 50 epoch — test sạch 154 ảnh: mAP@0.5 **0.991**, mAP@0.5:0.95 **0.824** |
+| Ablation | Augmentation ON vs OFF — đo trên test cũ bị rò rỉ, chỉ để tham khảo |
+| Error analysis | 7/154 ảnh test lỗi, toàn bộ là `shoulderstand`; OOD 45 ảnh (5 lớp): **82.2%**, lỗi tập trung ở `plank` |
+| Feedback loop | Đổi sang YOLOv8s: **không cải thiện** (mAP@0.5:0.95 0.816, OOD 71.1%) — ghi đúng kết quả, giữ yolov8n |
+| Model PROD | Giữ model cũ: test sạch 42 ảnh mAP@0.5:0.95 0.774, OOD **40/45** — không model train lại nào hơn |
 | Form scoring (rule-based) | 14/15 ảnh mẫu thật đúng form + 5/5 case tổng hợp lệch góc phát hiện đúng — 2 hạn chế thật đã ghi nhận (MediaPipe trên pose lộn ngược, góc 2D bị méo khi camera chụp xiên) |
 | Export ONNX | Nhanh hơn PyTorch ~17% (GPU T4: 206.29ms vs 247.94ms); CPU local ~245.8ms/ảnh |
 | Deploy public | Render (backend) + Cloudflare Pages (frontend), HTTPS thật, camera xác nhận chạy đúng trên iPhone thật |
+| Stress test PROD | Bắn thẳng vào Render: 4 request đồng thời từ 10% lỗi, p95 42s → **0% lỗi, p95 13s**; 8 đồng thời từ 25% lỗi → **0%** sau khi giới hạn 2 ảnh xử lý cùng lúc (80/80 request thành công); cold start ~33s (`docs/perf/`) |
 
 **Demo live:** https://computer-vision-project.pthieu290998.workers.dev
 (⚠️ backend Render free tier ngủ sau ~15 phút không dùng — mở trang trước
@@ -124,8 +135,9 @@ Số liệu thật (không phải ước tính), chi tiết đầy đủ ở
 
 ## Trạng thái
 
-Đã hoàn thành Giai đoạn 0-9 (data → train → eval → feedback loop → form
-scoring → export → backend → web demo → deploy public) với số liệu/kết
-quả thật — xem tiến độ chi tiết tại
-[`docs/requirement_checklist.md`](docs/requirement_checklist.md). Còn lại:
-tài liệu/slide hoàn thiện (Giai đoạn 10) và video nộp bài (Giai đoạn 11).
+Đã hoàn thành Giai đoạn 0-11 (data → train → eval → feedback loop → form
+scoring → export → backend → web demo → deploy public → tài liệu/slide →
+kịch bản video). Giai đoạn 12 sửa rò rỉ dữ liệu và đo lại hiệu năng trên
+PROD — xem tiến độ chi tiết tại
+[`docs/requirement_checklist.md`](docs/requirement_checklist.md) và
+[`docs/PLAN.md`](docs/PLAN.md). Còn lại: ảnh OOD tự chụp bằng điện thoại.

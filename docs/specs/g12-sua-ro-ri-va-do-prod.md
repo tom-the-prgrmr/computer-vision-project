@@ -346,7 +346,9 @@ ghi số).
 - **Cold start chưa đo được thật:** lần chạy "after" `/health` trả 200 sau 0.3s
   (service đang thức), 7.8s ở `/predict` đầu chỉ là thời gian nạp model lần đầu. Cần
   chạy lại script sau ≥ 15 phút không có traffic.
-- Cần **deploy lại + đo lần 3** (cùng cấu hình) để xác nhận cap 2 hết 502 ở 8 đồng thời.
+- Code cap đã push lên `main` (commit `9aed7bb`) để Render build lại — chưa xác nhận
+  bản đang chạy trên Render. Cần **đo lần 3** (cùng cấu hình) để xác nhận cap 2 hết 502
+  ở 8 đồng thời.
 
 **Smoke test:** `dedup_split` chạy thật trên data thật (2 lần, manifest tái tạo giống
 nhau); cell notebook 06 không cần GPU (T12.2, T12.3, `per_image_errors`, OOD) chạy thật
@@ -466,6 +468,32 @@ của split gốc (T12.3: `.pt` mAP@0.5 0.995 / mAP@0.5:0.95 0.774) và OOD 40/4
 dùng số 101 ảnh test gốc (bị rò rỉ). Số `clean_baseline` (test 154 ảnh) là bằng chứng
 cho quy trình split sạch và vòng cải tiến T12.7.
 
-**Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.8 (export
-`yolov8n_v1_clean_baseline` + deploy — export ONNX không cần GPU), T12.10 deploy lại +
-đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút ngủ, T12.11 (docs).
+**T12.11 — tài liệu đã cập nhật (2026-11-10):** `docs/problem_statement.md` (ghi chú "Đã
+bị thay thế" ở Giai đoạn 1-5, bổ sung ở Giai đoạn 7, giữ nguyên đoạn cũ; mục mới "Rò rỉ dữ
+liệu & đánh giá lại"), `README.md` (bảng kết quả, cách chạy lại với split sạch),
+`docs/requirement_checklist.md` (mục 2, 4, 5, 7), slide (`summary.md`, `presentation.html`,
+`scripts/build_pptx.py` → `.pptx` sinh lại, giữ 13 slide cùng thứ tự; slide 10 có bài học
+"tin README của dataset"), `script.md`. Review kiến trúc bắt được: 1 số sai (peak RSS không
+giới hạn là 555 MB, đã ghi nhầm 566), "hết RAM" bị nói như sự thật (đã đổi thành giả
+thuyết + tái hiện ở local), lỗi 502 lẻ ở mức 1 thiếu chú thích — đã sửa cả 3.
+
+**T12.10 — đo PROD lần 3 (2026-11-10 16:13 UTC, cap 2, cùng cấu hình),**
+`docs/perf/prod_load_test_20261110_1613_after_cap2.md`:
+
+| Đồng thời | Before | Threadpool | Threadpool + cap 2 |
+|---|---|---|---|
+| 1 | 0% / p95 6.3s / 0.19 | 5% / 6.6s / 0.18 | 0% / 6.1s / 0.20 |
+| 2 | 0% / 10.9s / 0.20 | 0% / 8.5s / 0.28 | 0% / 9.3s / 0.26 |
+| 4 | 10% / 42.1s / 0.21 | 0% / 13.3s / 0.37 | 0% / 16.4s / 0.27 |
+| 8 | 25% / 49.1s / 0.18 | 100% 502 | **0% / 31.1s / 0.27** |
+
+- **80/80 request thành công.** Server p50 ~7.1s ở mức 2, 4 và 8 (so với 9.7s ở 4 đồng
+  thời khi chưa cap) → đúng 2 ảnh xử lý cùng lúc, xác nhận bản có cap đang chạy trên
+  Render. Đánh đổi: throughput ~0.27 req/s thay vì 0.37, p95 ở 4 đồng thời 16.4s thay vì
+  13.3s.
+- Hết 502 khi cap RAM ủng hộ giả thuyết OOM; vẫn chưa có log Render trực tiếp.
+- **Cold start thật** (service ngủ từ lần đo 2026-10-28): `/health` trả 200 sau 22.5s (1
+  lần gọi, request treo trong lúc Render đánh thức), `/predict` đầu tiên 10.1s client /
+  9.8s server (nạp ONNX + MediaPipe) → người dùng đầu tiên chờ ~33s.
+
+**Deferred / cần bạn:** T12.4 phần ảnh tự chụp điện thoại.

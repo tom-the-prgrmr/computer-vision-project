@@ -209,19 +209,20 @@
 
   <section class="slide" data-i="3" hidden>
     <div class="slide-inner">
-      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 01 · DỮ LIỆU <span class="bk">]</span></p>
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 01 + 12 · DỮ LIỆU <span class="bk">]</span></p>
       <div class="cols">
         <div>
-          <h2 class="slide-title">v1 chạy hết vòng đời thật — v2 dừng ở thiết kế</h2>
+          <h2 class="slide-title">README ghi "không augmentation" — thực tế 58% ảnh test là bản sao ảnh train</h2>
           <ul class="plain">
-            <li><b>v1:</b> 5 lớp, format YOLO có sẵn bbox, nguồn Roboflow "YOLO YOGA Dataset"</li>
-            <li><b>Augmentation:</b> <code>fliplr</code> bật, <code>flipud</code> tắt (lật dọc phá vỡ ý nghĩa tư thế), <code>degrees</code> giới hạn</li>
-            <li><b>v2</b> (15-20 lớp, Yoga-82 + pseudo-label từ person detector): code đã thiết kế sẵn (<code>bootstrap_bboxes()</code>) nhưng không triển khai — v1 đã đủ robust (xem GĐ 05)</li>
+            <li><b>v1:</b> 5 lớp, format YOLO có sẵn bbox, nguồn Roboflow "YOLO YOGA Dataset", 1013 ảnh</li>
+            <li><b>Rò rỉ:</b> ảnh valid/test là bản lật ngang hoặc crop/zoom của ảnh train — phát hiện bằng dHash (kể cả bản lật) + ORB/RANSAC, gom nhóm bằng union-find</li>
+            <li><b>Chia lại theo nhóm:</b> 703 / 156 / 154 ảnh, không nhóm nào nằm ở hai split; manifest commit vào repo để tái tạo</li>
+            <li><b>Augmentation:</b> <code>fliplr</code> bật, <code>flipud</code> tắt, <code>degrees</code> giới hạn</li>
           </ul>
         </div>
         <div>
-          <div class="tile"><span class="big" style="font-size:1.8rem">v1 · LIVE</span><span class="cap">download → train → ablation → eval → export → deploy</span></div>
-          <div class="tile issue"><span class="big" style="font-size:1.8rem">v2 · STUB</span><span class="cap">bootstrap_bbox.py — NotImplementedError, chưa cần chạy</span></div>
+          <div class="tile issue"><span class="big">59/101</span><span class="cap">ảnh test gốc trùng nhóm với ảnh train</span></div>
+          <div class="tile"><span class="big">552</span><span class="cap">nhóm ảnh thật sự độc lập trong 1013 ảnh</span></div>
         </div>
       </div>
     </div>
@@ -229,48 +230,56 @@
 
   <section class="slide" data-i="4" hidden>
     <div class="slide-inner">
-      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 02-03 · TRAINING &amp; ABLATION <span class="bk">]</span></p>
-      <h2 class="slide-title">Cùng seed, đổi đúng 1 biến</h2>
-      <p style="color:var(--ink-soft)">model <code>yolov8n.pt</code> · seed <span class="num">42</span> · epochs <span class="num">50</span> · imgsz <span class="num">640</span></p>
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 02-03 + 12 · TRAINING <span class="bk">]</span></p>
+      <h2 class="slide-title">Rò rỉ thổi phồng mAP@0.5:0.95 khoảng 6 điểm</h2>
+      <p style="color:var(--ink-soft)">model <code>yolov8n.pt</code> · seed <span class="num">42</span> · epochs <span class="num">50</span> · imgsz <span class="num">640</span> · augmentation ON</p>
       <table>
-        <thead><tr><th>Run</th><th>Augmentation</th><th>Kết quả</th></tr></thead>
+        <thead><tr><th>Model · tập test</th><th class="num">mAP@0.5</th><th class="num">mAP@0.5:0.95</th></tr></thead>
         <tbody>
-          <tr class="win"><td>Baseline</td><td>ON</td><td>Thắng — chọn làm config chính thức</td></tr>
-          <tr><td>Ablation</td><td>OFF</td><td>So sánh, không chọn</td></tr>
+          <tr><td>Model cũ · 101 ảnh test gốc (rò rỉ)</td><td class="num">0.994</td><td class="num">0.833</td></tr>
+          <tr><td>Model cũ · 42 ảnh test sạch</td><td class="num">0.995</td><td class="num">0.774</td></tr>
+          <tr class="win"><td>Train lại trên split sạch · 154 ảnh test mới</td><td class="num">0.991</td><td class="num">0.824</td></tr>
         </tbody>
       </table>
-      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">Số mAP@0.5 / mAP@0.5:0.95 thật — xem bảng đầy đủ trong <code>docs/problem_statement.md</code>.</p>
+      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">mAP@0.5 gần như không đổi — ở IoU 0.5, v1 vẫn dễ. Ablation augmentation ON/OFF (chọn ON) đo trên test bị rò rỉ, chỉ để tham khảo.</p>
     </div>
   </section>
 
   <section class="slide" data-i="5" hidden>
     <div class="slide-inner">
-      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 04 · EVALUATION &amp; ERROR ANALYSIS <span class="bk">]</span></p>
-      <h2 class="slide-title">Confusion matrix sạch, EigenCAM xác nhận nhìn đúng chỗ</h2>
-      <ul class="plain">
-        <li>Confusion matrix: không có cặp lớp nào bị nhầm đáng kể trong tập test (cùng phân bố training)</li>
-        <li>EigenCAM (3-5 ảnh): model tập trung đúng vùng cơ thể, không bị phân tâm bởi nền</li>
-        <li>→ Không có lỗi trong tập test cùng phân bố để "sửa" — phải đổi hướng cho bước feedback loop</li>
-      </ul>
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 04 + 12 · ERROR ANALYSIS <span class="bk">]</span></p>
+      <div class="cols">
+        <div>
+          <h2 class="slide-title">Test sạch lộ ra lỗi thật</h2>
+          <ul class="plain">
+            <li><b>Test:</b> 7/154 ảnh lỗi, <b>toàn bộ là shoulderstand</b> — bỏ sót, nhầm sang bridge/downward. Ảnh đồ hoạ, nhiều người chồng lấn, người nhỏ ngược sáng</li>
+            <li><b>EigenCAM trên ảnh sai:</b> ảnh nhiều người — kích hoạt trải ra nền thay vì vào người</li>
+            <li><b>OOD 45 ảnh, đủ 5 lớp</b> (Kaggle + Wikimedia Commons, đã kiểm tra không trùng Roboflow): lỗi tập trung ở <b>plank</b> — side plank, ảnh ngoài trời đông người</li>
+            <li>Lỗi test và lỗi OOD rơi vào hai lớp khác nhau → test cùng phân bố không đại diện cho người dùng thật</li>
+          </ul>
+        </div>
+        <div>
+          <div class="tile issue"><span class="big">7/154</span><span class="cap">ảnh test sạch có lỗi (conf 0.5)</span></div>
+          <div class="tile"><span class="big">82.2%</span><span class="cap">37/45 ảnh OOD đúng</span></div>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="slide" data-i="6" hidden>
     <div class="slide-inner">
-      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 05 · FEEDBACK LOOP <span class="bk">]</span></p>
-      <div class="cols">
-        <div>
-          <h2 class="slide-title">Đo lỗi thật ngoài phân bố, không sửa mù quáng</h2>
-          <ul class="plain">
-            <li>18 ảnh thật, nguồn Kaggle — khác hoàn toàn Roboflow (khác chụp/nền/2 lớp)</li>
-            <li>1 lỗi duy nhất, khả năng do nhãn gốc dataset sai — không phải lỗi hệ thống</li>
-            <li><b>Kết luận:</b> baseline đủ robust → không retrain</li>
-          </ul>
-        </div>
-        <div class="tile">
-          <span class="big">94.4%</span>
-          <span class="cap">17/18 ảnh OOD đúng</span>
-        </div>
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 12 · FEEDBACK LOOP <span class="bk">]</span></p>
+      <h2 class="slide-title">Đổi đúng 1 yếu tố, đo trước/sau — và nó không cải thiện</h2>
+      <table>
+        <thead><tr><th>Run (cùng seed, cùng dữ liệu)</th><th class="num">mAP@0.5:0.95</th><th class="num">Ảnh test lỗi</th><th class="num">OOD</th></tr></thead>
+        <tbody>
+          <tr class="win"><td>yolov8n · trước</td><td class="num">0.824</td><td class="num">7</td><td class="num">82.2%</td></tr>
+          <tr><td>yolov8s · sau (model lớn hơn)</td><td class="num">0.816</td><td class="num">10</td><td class="num">71.1%</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:1.2rem">
+        <b>Kết luận trung thực</b>
+        <p>Giữ yolov8n. Giả thuyết: model gấp ~3.5 lần tham số khớp quá mức với 703 ảnh train (1 seed, chưa kiểm chứng). Thay đổi này không nhắm đúng pattern lỗi quan sát được — hướng tiếp: augmentation <code>scale</code> cho người nhỏ, thêm ảnh side plank. PROD giữ model cũ (OOD 40/45) vì không model train lại nào hơn.</p>
       </div>
     </div>
   </section>
@@ -294,18 +303,18 @@
 
   <section class="slide" data-i="8" hidden>
     <div class="slide-inner">
-      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 07 · EXPORT &amp; BACKEND <span class="bk">]</span></p>
-      <h2 class="slide-title">ONNX nhanh hơn PyTorch ~17% — nhưng CPU free-tier là CPU free-tier</h2>
+      <p class="eyebrow"><span class="bk">[</span> GIAI ĐOẠN 07 + 12 · HIỆU NĂNG TRÊN PROD <span class="bk">]</span></p>
+      <h2 class="slide-title">Stress test thẳng vào Render, không đo trên máy train</h2>
       <table>
-        <thead><tr><th>Nơi đo</th><th class="num">Latency</th></tr></thead>
+        <thead><tr><th>Đồng thời</th><th class="num">Trước</th><th class="num">Threadpool</th><th class="num">+ giới hạn 2</th></tr></thead>
         <tbody>
-          <tr><td>PyTorch · GPU T4 (Colab)</td><td class="num">247.94 ms</td></tr>
-          <tr class="win"><td>ONNX Runtime · GPU T4 (Colab)</td><td class="num">206.29 ms</td></tr>
-          <tr><td>ONNX Runtime · CPU (local)</td><td class="num">245.8 ms</td></tr>
-          <tr><td>ONNX Runtime · CPU (Render free)</td><td class="num">~4.5 – 8.4 s</td></tr>
+          <tr><td>1</td><td class="num">0% · 6.3 s</td><td class="num">5% · 6.6 s *</td><td class="num">0% · 6.1 s</td></tr>
+          <tr><td>2</td><td class="num">0% · 10.9 s</td><td class="num">0% · 8.5 s</td><td class="num">0% · 9.3 s</td></tr>
+          <tr><td>4</td><td class="num">10% · 42.1 s</td><td class="num">0% · 13.3 s</td><td class="num">0% · 16.4 s</td></tr>
+          <tr class="win"><td>8</td><td class="num">25% · 49.1 s</td><td class="num">100% lỗi 502</td><td class="num">0% · 31.1 s</td></tr>
         </tbody>
       </table>
-      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">Chênh lệch CPU free-tier do tài nguyên bị giới hạn/chia sẻ mạnh — kết quả vẫn đúng, chỉ chậm hơn, không phải bug.</p>
+      <p style="color:var(--ink-soft); margin-top:1.2rem; font-size:.85rem">Tỉ lệ lỗi · p95, 20 request mỗi mức. Trước: <code>async def</code> chặn event loop. Threadpool: nhanh hơn ở 2-4 đồng thời nhưng ở 8 đồng thời process chết (nghi hết RAM 512 MB; local: peak 555 → 362 MB). Giới hạn 2 ảnh cùng lúc: 80/80 thành công, đổi lại request xếp hàng lâu hơn. Cold start thật ~33s. * 1 lỗi 502 chưa giải thích được.</p>
     </div>
   </section>
 
@@ -330,10 +339,10 @@
   <section class="slide" data-i="10" hidden>
     <div class="slide-inner">
       <p class="eyebrow"><span class="bk">[</span> LỖI &amp; BÀI HỌC <span class="bk">]</span></p>
-      <h2 class="slide-title">Chẩn đoán từ log/screenshot thật — không đoán</h2>
-      <div class="lesson"><span class="fix">FIX</span><p><b>Tiền tố "yoga-pose "</b> chưa bỏ trước khi so sánh → OOD báo nhầm 0% — sửa bằng đối chiếu log gốc, không đoán số liệu.</p></div>
+      <h2 class="slide-title">Bài học lớn nhất: kiểm tra dữ liệu và đo ở đúng chỗ</h2>
+      <div class="lesson"><span class="fix">DATA</span><p><b>Tin README của dataset mà không kiểm tra</b> → 58% ảnh test là bản sao ảnh train, mọi kết luận Giai đoạn 2-5 dựa trên số ảo. Kiểm tra trùng lặp giữa các split phải là bước đầu tiên của khâu Data.</p></div>
+      <div class="lesson"><span class="fix">PERF</span><p><b>Đo hiệu năng trên máy train</b> không thấy được lỗi thật: chỉ khi bắn thẳng vào Render mới lộ ra event loop bị chặn và process chết khi nhiều request.</p></div>
       <div class="lesson"><span class="fix">FIX</span><p><b>mediapipe ≥ 1.0</b> bỏ hẳn <code>solutions.pose</code> (API cũ) → pin đúng bản còn API, xác nhận thật qua lỗi build thật.</p></div>
-      <div class="lesson"><span class="fix">FIX</span><p><b>Letterbox rounding</b> lệch ~2.3px trên ảnh tỉ lệ cực đoan → làm tròn pad 1 lần, dùng lại nhất quán.</p></div>
       <div class="lesson"><span class="fix">FIX</span><p><b>3 bug deploy</b> (runtime Docker, libGL, iOS fullscreen) — cả 3 chẩn đoán trực tiếp từ log build/screenshot thiết bị thật, không đoán mò.</p></div>
     </div>
   </section>

@@ -273,52 +273,60 @@ tag_card(s, Inches(0.7) + 2 * (cw + gap), Inches(2.6), cw, Inches(3.2), "rule-ba
 
 # ============================================================ Slide 3 — Dữ liệu
 s = new_slide()
-eyebrow(s, "GIAI ĐOẠN 01 · DỮ LIỆU")
-heading(s, "v1 chạy hết vòng đời thật — v2 dừng ở thiết kế", width=Inches(7.2), size=27)
+eyebrow(s, "GIAI ĐOẠN 01 + 12 · DỮ LIỆU")
+heading(s, "README ghi \u201ckhông augmentation\u201d — thực tế 58% ảnh test là bản sao ảnh train", width=Inches(7.4), size=24)
 bullet_list(s, [
-    "v1: 5 lớp, format YOLO có sẵn bbox, nguồn Roboflow \u201cYOLO YOGA Dataset\u201d",
-    "Augmentation: fliplr bật, flipud tắt (lật dọc phá vỡ ý nghĩa tư thế), degrees giới hạn",
-    "v2 (15-20 lớp, Yoga-82 + pseudo-label): code đã thiết kế sẵn (bootstrap_bboxes()) nhưng không triển khai — v1 đã đủ robust (xem GĐ 05)",
-], top=Inches(2.35), width=Inches(7.2))
-stat_tile(s, Inches(8.3), Inches(2.35), Inches(4.3), Inches(1.15), "v1 · LIVE", "download → train → ablation → eval → export → deploy")
-stat_tile(s, Inches(8.3), Inches(3.65), Inches(4.3), Inches(1.15), "v2 · STUB", "bootstrap_bbox.py — NotImplementedError, chưa cần chạy", issue=True)
+    "v1: 5 lớp, format YOLO có sẵn bbox, nguồn Roboflow \u201cYOLO YOGA Dataset\u201d, 1013 ảnh",
+    "Rò rỉ: ảnh valid/test là bản lật ngang hoặc crop/zoom của ảnh train — phát hiện bằng dHash (kể cả bản lật) + ORB/RANSAC, gom nhóm bằng union-find",
+    "Chia lại theo nhóm: 703 / 156 / 154 ảnh, không nhóm nào nằm ở hai split; manifest commit vào repo",
+    "Augmentation: fliplr bật, flipud tắt, degrees giới hạn",
+], top=Inches(2.55), width=Inches(7.2), size=14)
+stat_tile(s, Inches(8.3), Inches(2.55), Inches(4.3), Inches(1.5), "59/101", "ẢNH TEST GỐC TRÙNG NHÓM VỚI ẢNH TRAIN", issue=True)
+stat_tile(s, Inches(8.3), Inches(4.2), Inches(4.3), Inches(1.5), "552", "NHÓM ẢNH ĐỘC LẬP TRONG 1013 ẢNH")
 
-# ============================================================ Slide 4 — Training & Ablation
+# ============================================================ Slide 4 — Training
 s = new_slide()
-eyebrow(s, "GIAI ĐOẠN 02-03 · TRAINING & ABLATION")
-heading(s, "Cùng seed, đổi đúng 1 biến", size=30)
-tb = textbox(s, Inches(0.7), Inches(1.95), Inches(10), Inches(0.4))
+eyebrow(s, "GIAI ĐOẠN 02-03 + 12 · TRAINING")
+heading(s, "Rò rỉ thổi phồng mAP@0.5:0.95 khoảng 6 điểm", size=30)
+tb = textbox(s, Inches(0.7), Inches(1.95), Inches(11), Inches(0.4))
 r = tb.text_frame.paragraphs[0].add_run()
-set_run(r, "model yolov8n.pt  ·  seed 42  ·  epochs 50  ·  imgsz 640", 13, INK_SOFT, FONT_MONO)
-table(s, Inches(0.7), Inches(2.5), Inches(10.5), Inches(1.6),
-      ["Run", "Augmentation", "Kết quả"],
-      [["Baseline", "ON", "Thắng — chọn làm config chính thức"],
-       ["Ablation", "OFF", "So sánh, không chọn"]],
-      win_rows={1})
-tb2 = textbox(s, Inches(0.7), Inches(4.4), Inches(10.5), Inches(0.5))
+set_run(r, "model yolov8n.pt  ·  seed 42  ·  epochs 50  ·  imgsz 640  ·  augmentation ON", 13, INK_SOFT, FONT_MONO)
+table(s, Inches(0.7), Inches(2.5), Inches(11.5), Inches(2.0),
+      ["Model · tập test", "mAP@0.5", "mAP@0.5:0.95"],
+      [["Model cũ · 101 ảnh test gốc (rò rỉ)", "0.994", "0.833"],
+       ["Model cũ · 42 ảnh test sạch", "0.995", "0.774"],
+       ["Train lại trên split sạch · 154 ảnh test mới", "0.991", "0.824"]],
+      win_rows={3})
+tb2 = textbox(s, Inches(0.7), Inches(4.8), Inches(11.5), Inches(0.6))
 r2 = tb2.text_frame.paragraphs[0].add_run()
-set_run(r2, "Số mAP@0.5 / mAP@0.5:0.95 thật — xem bảng đầy đủ trong docs/problem_statement.md.", 12, INK_SOFT, FONT_BODY, italic=True)
+set_run(r2, "mAP@0.5 gần như không đổi — ở IoU 0.5, v1 vẫn dễ. Ablation augmentation ON/OFF (chọn ON) đo trên test bị rò rỉ, chỉ để tham khảo.", 12, INK_SOFT, FONT_BODY, italic=True)
 
-# ============================================================ Slide 5 — Evaluation
+# ============================================================ Slide 5 — Error analysis
 s = new_slide()
-eyebrow(s, "GIAI ĐOẠN 04 · EVALUATION & ERROR ANALYSIS")
-heading(s, "Confusion matrix sạch, EigenCAM xác nhận nhìn đúng chỗ", width=Inches(11.5), size=27)
+eyebrow(s, "GIAI ĐOẠN 04 + 12 · ERROR ANALYSIS")
+heading(s, "Test sạch lộ ra lỗi thật", width=Inches(7.4), size=28)
 bullet_list(s, [
-    "Confusion matrix: không có cặp lớp nào bị nhầm đáng kể trong tập test (cùng phân bố training)",
-    "EigenCAM (3-5 ảnh): model tập trung đúng vùng cơ thể, không bị phân tâm bởi nền",
-    "→ Không có lỗi trong tập test cùng phân bố để \u201csửa\u201d — phải đổi hướng cho bước feedback loop",
-], top=Inches(2.4), width=Inches(11))
+    "Test: 7/154 ảnh lỗi, toàn bộ là shoulderstand — bỏ sót, nhầm sang bridge/downward. Ảnh đồ hoạ, nhiều người chồng lấn, người nhỏ ngược sáng",
+    "EigenCAM trên ảnh sai: ảnh nhiều người — kích hoạt trải ra nền thay vì vào người",
+    "OOD 45 ảnh, đủ 5 lớp (Kaggle + Wikimedia Commons, không trùng Roboflow): lỗi tập trung ở plank — side plank, ảnh ngoài trời đông người",
+    "Lỗi test và lỗi OOD rơi vào hai lớp khác nhau → test cùng phân bố không đại diện cho người dùng thật",
+], top=Inches(2.25), width=Inches(7.2), size=14)
+stat_tile(s, Inches(8.3), Inches(2.25), Inches(4.3), Inches(1.5), "7/154", "ẢNH TEST SẠCH CÓ LỖI (CONF 0.5)", issue=True)
+stat_tile(s, Inches(8.3), Inches(3.9), Inches(4.3), Inches(1.5), "82.2%", "37/45 ẢNH OOD ĐÚNG")
 
 # ============================================================ Slide 6 — Feedback loop
 s = new_slide()
-eyebrow(s, "GIAI ĐOẠN 05 · FEEDBACK LOOP")
-heading(s, "Đo lỗi thật ngoài phân bố, không sửa mù quáng", width=Inches(7.2), size=27)
-bullet_list(s, [
-    "18 ảnh thật, nguồn Kaggle — khác hoàn toàn Roboflow (khác chụp/nền/2 lớp)",
-    "1 lỗi duy nhất, khả năng do nhãn gốc dataset sai — không phải lỗi hệ thống",
-    "Kết luận: baseline đủ robust → không retrain",
-], top=Inches(2.35), width=Inches(7.2))
-stat_tile(s, Inches(8.3), Inches(2.35), Inches(4.3), Inches(1.8), "94.4%", "17/18 ẢNH OOD ĐÚNG")
+eyebrow(s, "GIAI ĐOẠN 12 · FEEDBACK LOOP")
+heading(s, "Đổi đúng 1 yếu tố, đo trước/sau — và nó không cải thiện", width=Inches(11.8), size=26)
+table(s, Inches(0.7), Inches(2.2), Inches(11.5), Inches(1.5),
+      ["Run (cùng seed, cùng dữ liệu)", "mAP@0.5:0.95", "Ảnh test lỗi", "OOD"],
+      [["yolov8n · trước", "0.824", "7", "82.2%"],
+       ["yolov8s · sau (model lớn hơn)", "0.816", "10", "71.1%"]],
+      win_rows={1})
+callout(s, Inches(0.7), Inches(4.0), Inches(11.5), Inches(2.0), "Kết luận trung thực",
+        "Giữ yolov8n. Giả thuyết: model gấp ~3.5 lần tham số khớp quá mức với 703 ảnh train (1 seed, chưa kiểm chứng). "
+        "Thay đổi này không nhắm đúng pattern lỗi quan sát được — hướng tiếp: augmentation scale cho người nhỏ, thêm ảnh side plank. "
+        "PROD giữ model cũ (OOD 40/45) vì không model train lại nào hơn.")
 
 # ============================================================ Slide 7 — Form scoring
 s = new_slide()
@@ -330,20 +338,23 @@ callout(s, Inches(4.3), Inches(2.4), Inches(8.3), Inches(3.15), "2 hạn chế g
         "MediaPipe kém tin cậy trên tư thế lộn ngược, nền tương phản thấp — landmark detect sai. "
         "Góc chiếu 2D bị méo khi camera chụp xiên — hạn chế cố hữu của ảnh đơn không có depth, không phải bug.")
 
-# ============================================================ Slide 8 — Export & Backend
+# ============================================================ Slide 8 — Hiệu năng PROD
 s = new_slide()
-eyebrow(s, "GIAI ĐOẠN 07 · EXPORT & BACKEND")
-heading(s, "ONNX nhanh hơn PyTorch ~17% — nhưng CPU free-tier là CPU free-tier", width=Inches(11.8), size=24)
-table(s, Inches(0.7), Inches(2.5), Inches(10.5), Inches(2.6),
-      ["Nơi đo", "Latency"],
-      [["PyTorch · GPU T4 (Colab)", "247.94 ms"],
-       ["ONNX Runtime · GPU T4 (Colab)", "206.29 ms"],
-       ["ONNX Runtime · CPU (local)", "245.8 ms"],
-       ["ONNX Runtime · CPU (Render free)", "~4.5 – 8.4 s"]],
-      win_rows={2})
-tb2 = textbox(s, Inches(0.7), Inches(5.35), Inches(10.5), Inches(0.6))
+eyebrow(s, "GIAI ĐOẠN 07 + 12 · HIỆU NĂNG TRÊN PROD")
+heading(s, "Stress test thẳng vào Render, không đo trên máy train", width=Inches(11.8), size=26)
+table(s, Inches(0.7), Inches(2.2), Inches(11.5), Inches(2.6),
+      ["Đồng thời", "Trước", "Threadpool", "+ giới hạn 2"],
+      [["1", "0% · 6.3 s", "5% · 6.6 s *", "0% · 6.1 s"],
+       ["2", "0% · 10.9 s", "0% · 8.5 s", "0% · 9.3 s"],
+       ["4", "10% · 42.1 s", "0% · 13.3 s", "0% · 16.4 s"],
+       ["8", "25% · 49.1 s", "100% lỗi 502", "0% · 31.1 s"]],
+      win_rows={4})
+tb2 = textbox(s, Inches(0.7), Inches(5.05), Inches(11.5), Inches(1.2))
+tb2.text_frame.word_wrap = True
 r2 = tb2.text_frame.paragraphs[0].add_run()
-set_run(r2, "Chênh lệch CPU free-tier do tài nguyên bị giới hạn/chia sẻ mạnh — kết quả vẫn đúng, chỉ chậm hơn, không phải bug.", 12, INK_SOFT, FONT_BODY, italic=True)
+set_run(r2, "Tỉ lệ lỗi · p95, 20 request mỗi mức. Trước: async def chặn event loop. Threadpool: nhanh hơn ở 2-4 đồng thời nhưng ở 8 đồng thời "
+            "process chết (nghi hết RAM 512 MB; local: peak 555 → 362 MB). Giới hạn 2 ảnh cùng lúc: 80/80 thành công, đổi lại request xếp hàng lâu hơn. "
+            "Cold start thật ~33s. * 1 lỗi 502 chưa giải thích được.", 12, INK_SOFT, FONT_BODY, italic=True)
 
 # ============================================================ Slide 9 — Web demo & Deploy
 s = new_slide()
@@ -364,10 +375,10 @@ lesson_row(s, Inches(6.5), Inches(3.85), Inches(6.1), "FIX", "iOS Safari đẩy 
 # ============================================================ Slide 10 — Lỗi & bài học
 s = new_slide()
 eyebrow(s, "LỖI & BÀI HỌC")
-heading(s, "Chẩn đoán từ log/screenshot thật — không đoán", width=Inches(11.8), size=27)
-lesson_row(s, Inches(0.7), Inches(2.55), Inches(11.5), "FIX", "Tiền tố \u201cyoga-pose \u201d chưa bỏ trước khi so sánh → OOD báo nhầm 0% — sửa bằng đối chiếu log gốc.")
-lesson_row(s, Inches(0.7), Inches(3.2), Inches(11.5), "FIX", "mediapipe \u2265 1.0 bỏ hẳn solutions.pose (API cũ) → pin đúng bản còn API, xác nhận qua lỗi build thật.")
-lesson_row(s, Inches(0.7), Inches(3.85), Inches(11.5), "FIX", "Letterbox rounding lệch ~2.3px trên ảnh tỉ lệ cực đoan → làm tròn pad 1 lần, dùng lại nhất quán.")
+heading(s, "Bài học lớn nhất: kiểm tra dữ liệu và đo ở đúng chỗ", width=Inches(11.8), size=27)
+lesson_row(s, Inches(0.7), Inches(2.55), Inches(11.5), "DATA", "Tin README của dataset mà không kiểm tra → 58% ảnh test là bản sao ảnh train, mọi kết luận Giai đoạn 2-5 dựa trên số ảo.")
+lesson_row(s, Inches(0.7), Inches(3.2), Inches(11.5), "PERF", "Đo hiệu năng trên máy train không thấy lỗi thật — chỉ khi bắn thẳng vào Render mới lộ event loop bị chặn và process chết.")
+lesson_row(s, Inches(0.7), Inches(3.85), Inches(11.5), "FIX", "mediapipe \u2265 1.0 bỏ hẳn solutions.pose (API cũ) → pin đúng bản còn API, xác nhận qua lỗi build thật.")
 lesson_row(s, Inches(0.7), Inches(4.5), Inches(11.5), "FIX", "3 bug deploy (runtime Docker, libGL, iOS fullscreen) — chẩn đoán trực tiếp từ log/screenshot thật.")
 
 # ============================================================ Slide 11 — Demo

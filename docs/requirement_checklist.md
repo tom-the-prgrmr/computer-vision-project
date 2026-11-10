@@ -10,19 +10,28 @@ viết README và làm slide.
 
 - [x] **1. Problem statement** — `docs/problem_statement.md`
 - [x] **2. Data** — nguồn, số lượng, chia train/val/test, imbalance, augmentation
-      → `notebooks/01_data_exploration.ipynb`
+      → `notebooks/01_data_exploration.ipynb`. **Giai đoạn 12:** split gốc rò rỉ
+      (59/101 ảnh test trùng ảnh train) → chia lại theo nhóm ảnh trùng, 703/156/154,
+      không nhóm nào nằm ở hai split → `src/data/dedup_split.py`,
+      `data/splits/yoga_v1_clean_manifest.csv`
 - [x] **3. Method & Training** — model + lý do chọn, ≥1 ablation (biến đổi 1 yếu
       tố, seed cố định), log huấn luyện thật
       → `notebooks/02_train_detector.ipynb`, `src/models/train.py`
 - [x] **4. Evaluation & Error Analysis** — mAP/confusion matrix, case sai cụ thể +
-      Grad-CAM, pattern lỗi lặp lại
-      → `notebooks/03_evaluation_error_analysis.ipynb`
-- [x] **5. Feedback loop – cải tiến** — mục 4 không tìm ra lỗi trong tập test cùng
-      phân bố (0 cặp lớp bị nhầm), nên đổi hướng: đo lỗi thật trên ảnh **ngoài**
-      phân bố dataset (OOD) — kết quả: 17/18 = 94.4%, không có pattern lỗi rõ
-      rệt → kết luận baseline đã robust, không cần retrain (xem
-      `docs/problem_statement.md` mục "Feedback loop cải tiến")
-      → `notebooks/05_feedback_loop_ood.ipynb`
+      Grad-CAM, pattern lỗi lặp lại. **Làm lại ở Giai đoạn 12 trên test sạch:**
+      mAP@0.5 0.991 / mAP@0.5:0.95 0.824; 7/154 ảnh lỗi, toàn bộ `shoulderstand`
+      (ảnh đồ hoạ, nhiều người chồng lấn, người nhỏ ngược sáng); EigenCAM trên ảnh
+      **sai**; OOD 45 ảnh, 5 lớp: 82.2%, lỗi tập trung ở `plank`
+      → `notebooks/06_clean_split_retrain.ipynb`
+      (bản cũ trên test bị rò rỉ: `notebooks/03_evaluation_error_analysis.ipynb`)
+- [x] **5. Feedback loop – cải tiến** — **làm lại ở Giai đoạn 12** (kết luận cũ "không
+      cần retrain" dựa trên test bị rò rỉ, đã bị thay thế): retrain thật với đúng 1
+      thay đổi (yolov8n → yolov8s), bảng trước/sau trên cùng test sạch + cùng tập
+      OOD → **không cải thiện** (mAP@0.5:0.95 0.824 → 0.816, OOD 82.2% → 71.1%),
+      giữ yolov8n, ghi rõ giả thuyết và giới hạn (xem `docs/problem_statement.md`
+      mục "Rò rỉ dữ liệu & đánh giá lại")
+      → `notebooks/06_clean_split_retrain.ipynb`
+      (bản cũ: `notebooks/05_feedback_loop_ood.ipynb`)
 - [x] **6. Phần tự nghĩ thêm** — lớp chấm điểm form bằng góc khớp MediaPipe,
       hiệu chỉnh ngưỡng bằng số đo thật trên 15 ảnh mẫu (5 lớp v1), test
       14/15 ảnh đúng form + 5/5 case tổng hợp lệch góc
@@ -35,8 +44,12 @@ viết README và làm slide.
       làm vì ngoài buffer thời gian, xem "Xử lý video" trong
       `docs/problem_statement.md`), **deploy public thật** (Render +
       Cloudflare Pages), camera xác nhận chạy đúng trên iPhone thật qua
-      HTTPS công khai
-      → `notebooks/04_export_onnx.ipynb`, `app/`, `web/`, `docs/specs/g9-deploy-public.md`
+      HTTPS công khai. **Giai đoạn 12:** stress test bắn thẳng vào bản deploy trên
+      Render (không đo trên máy train), sửa route chặn event loop + giới hạn 2 ảnh
+      xử lý cùng lúc → 8 request đồng thời từ 25% lỗi xuống 0% (80/80 thành công),
+      cold start thật ~33s; bảng trước/sau trong `docs/perf/`
+      → `notebooks/04_export_onnx.ipynb`, `app/`, `web/`, `scripts/load_test.py`,
+      `docs/specs/g9-deploy-public.md`
 
 ## Sản phẩm nộp
 

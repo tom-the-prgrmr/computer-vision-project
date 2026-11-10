@@ -118,8 +118,8 @@ và kết luận Giai đoạn 4-5 bị thổi phồng. Benchmark performance Gia
 - [x] T12.7 Một vòng cải tiến nhắm đúng pattern lỗi → `yolov8n_v1_clean_feedback`, bảng trước/sau (làm lại rubric mục 5) — đổi sang `yolov8s.pt`: **không cải thiện** (mAP@0.5:0.95 0.8242→0.8156, ảnh test lỗi 7→10, OOD 82.2%→71.1%); ghi đúng kết quả, model thắng vẫn là `yolov8n_v1_clean_baseline`
 - [x] T12.8 Chọn model deploy — **giữ model cũ `yolov8n_v1_baseline` ở PROD**: OOD qua app 40/45, hơn `clean_baseline` (37/45) và `final_alldata` train trên toàn bộ 1013 ảnh (37/45; 38 vs 41 ở conf 0.25). Không thay `best.onnx`, không redeploy. Số trung thực của model PROD: 42 ảnh test sạch (T12.3) + OOD
 - [x] T12.9 `scripts/load_test.py`: stress test PROD — "before" đo xong (`docs/perf/`): server ~4.8s/ảnh, client p50 5.2s→21.7s từ 1→8 đồng thời, tới 25% lỗi (502/timeout). *Cold start chưa đo bằng script*
-- [ ] T12.10 Sửa route `predict` chặn event loop (sync work trong `async def`), redeploy, đo lại T12.9 → bảng trước/sau — *threadpool đã deploy + đo "after": 4 đồng thời 10% lỗi/p95 42s → 0%/13s, nhưng 8 đồng thời 100% 502 (process chết, hết RAM 512 MB — xác nhận local: peak 566 MB không cap vs 362 MB cap 2). Đã thêm cap `MAX_CONCURRENT_PREDICTIONS=2`; còn deploy lại + đo lần 3 + đo cold start*
-- [ ] T12.11 Cập nhật `problem_statement.md` (giữ lịch sử, đánh dấu kết luận cũ đã bị thay thế), README, slide, checklist mục 4/5/7
+- [x] T12.10 Sửa route `predict` chặn event loop, redeploy, đo lại T12.9 → bảng trước/sau — threadpool + giới hạn 2 ảnh xử lý cùng lúc (`MAX_CONCURRENT_PREDICTIONS`). Đo PROD lần 3: **80/80 thành công**, 8 đồng thời từ 25% lỗi (before) / 100% lỗi (threadpool) → 0%, p95 31s; throughput ~0.27 req/s. Cold start thật: ~33s (22.5s đánh thức + 10.1s nạp model)
+- [x] T12.11 Cập nhật `problem_statement.md` (giữ lịch sử, đánh dấu kết luận cũ đã bị thay thế), README, slide, checklist mục 4/5/7
 
 ## Buffer — nếu trễ, cắt theo thứ tự này
 1. v2 mở rộng lớp (T5.1 nhánh v2)

@@ -81,6 +81,11 @@ loop – cải tiến), có số liệu mAP trước/sau rõ ràng.
 | test | 101 |
 | **Tổng** | **1013** |
 
+> ⚠️ **Đã bị thay thế (Giai đoạn 12):** split gốc của Roboflow **rò rỉ** — 59/101 ảnh
+> test và 122/203 ảnh valid là bản lật/crop của ảnh train, dù README của dataset ghi
+> "No image augmentation". Từ Giai đoạn 12 dùng split chia lại theo nhóm ảnh trùng:
+> train 703 / valid 156 / test 154 — xem mục "Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)" cuối tài liệu.
+
 **Phân bố bbox theo lớp** (gộp cả 3 split; nhãn gốc trong `data.yaml` có tiền tố
 `yoga-pose `, đã bỏ cho gọn):
 
@@ -119,6 +124,11 @@ Kết quả (Colab, T4 GPU): **mAP@0.5 = 0.9922, mAP@0.5:0.95 = 0.8352**. Rất
 cao cho baseline — dataset v1 tương đối "dễ" (5 lớp phân biệt rõ hình dạng
 tư thế, học viên thường chiếm phần lớn khung hình).
 
+> ⚠️ **Đã bị thay thế (Giai đoạn 12):** con số này đo trên test gốc bị rò rỉ nên bị thổi
+> phồng. Cùng model, chỉ tính 42 ảnh test sạch: mAP@0.5:0.95 **0.774** (thay vì 0.833).
+> Model train lại trên split sạch: mAP@0.5 **0.991**, mAP@0.5:0.95 **0.824** trên 154 ảnh
+> test mới — xem mục "Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)" cuối tài liệu.
+
 ## Ablation (Giai đoạn 3)
 
 Biến duy nhất thay đổi: **augmentation** (ON = baseline ở trên; OFF = tắt
@@ -138,6 +148,9 @@ triển khai thực tế là ảnh/video thật ngoài dataset (camera điện t
 chụp/ánh sáng đa dạng hơn tập train), augmentation giúp tổng quát hoá tốt
 hơn dù không thắng tuyệt đối trên test set cùng phân bố. Dùng config này
 cho Giai đoạn 5 (retrain sau cải tiến).
+
+> ⚠️ **Lưu ý (Giai đoạn 12):** cả hai run được đo trên test gốc bị rò rỉ. Ablation chưa
+> chạy lại trên split sạch, nên chênh lệch ON/OFF ở đây chỉ để tham khảo.
 
 *(mAP baseline ở bảng này lệch nhẹ so với con số train lần đầu — 0.9923/
 0.8435 — dù cùng `seed=42`, do YOLO/cuDNN không hoàn toàn deterministic
@@ -168,6 +181,10 @@ oversampling nhắm đúng cặp lớp hay nhầm) **không áp dụng được*
 toán thật sự khó hơn, hoặc test model trên ảnh/video ngoài dataset để tìm
 lỗi thực tế thay vì trên test set cùng phân bố).
 
+> ⚠️ **Đã bị thay thế (Giai đoạn 12):** "không có lỗi" là do 58% tập test là bản sao
+> ảnh train. Trên test sạch 154 ảnh, model train lại có **7 ảnh lỗi, toàn bộ là
+> `shoulderstand`** (bị nhầm sang `bridge`/`downward` hoặc bỏ sót) — xem mục "Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)" cuối tài liệu.
+
 ## Feedback loop cải tiến (Giai đoạn 5)
 
 Vì Giai đoạn 4 không tìm ra cặp lớp bị nhầm nào, hướng cải thiện chuyển
@@ -196,6 +213,11 @@ lộn xộn/mờ) → **không retrain**. Baseline (`yolov8n_v1_baseline`, confi
 ON từ Giai đoạn 3) đã đủ robust trên mức OOD nhỏ đã kiểm tra. Giới hạn:
 tập OOD chỉ 18 ảnh, 3/5 lớp — không phải benchmark thống kê chắc chắn,
 chỉ đủ làm bằng chứng định tính cho quyết định này.
+
+> ⚠️ **Đã bị thay thế (Giai đoạn 12):** tập OOD mở rộng lên 45 ảnh, đủ 5 lớp (thêm 27
+> ảnh Wikimedia Commons). Model cũ đạt **40/45 (88.9%)**, lỗi tập trung ở `plank`. Vòng
+> feedback loop được làm lại trên split sạch, có retrain thật và bảng trước/sau — xem
+> mục "Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)" cuối tài liệu.
 
 ## Form scoring rule-based (Giai đoạn 6)
 
@@ -246,6 +268,9 @@ ONNX nhanh hơn PyTorch ~17%. Cả 2 số đo trên GPU T4 dùng chung của Col
 free-tier, **không đại diện cho CPU thật lúc deploy** — số CPU thật đo
 được ở Giai đoạn 9 (xem mục dưới): ~245.8ms local, ~4.5-8.4s trên Render
 free tier (CPU bị giới hạn mạnh, không phải bug).
+
+> ⚠️ **Bổ sung (Giai đoạn 12):** số latency ở đây là 1 request đơn lẻ. Stress test bắn
+> thẳng vào bản deploy trên Render (nhiều request đồng thời) nằm ở mục "Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)" cuối tài liệu.
 
 **Backend (`app/service.py`):** implement thật ONNX inference (letterbox
 preprocess, NMS theo từng lớp riêng, dịch box về ảnh gốc —
@@ -299,3 +324,125 @@ FR7):** video hiện inline đúng, box + tip vẽ đúng vị trí, card kết 
 laptop: detect đúng `downward` conf 92%, `form_ok=false`, tip "Đẩy hông
 lên cao hơn để tạo hình chữ V ngược rõ hơn.", latency 4705ms (khớp tầm
 Render free tier CPU-giới hạn đã ghi nhận).
+
+## Rò rỉ dữ liệu & đánh giá lại (Giai đoạn 12)
+
+Chi tiết đầy đủ: `docs/specs/g12-sua-ro-ri-va-do-prod.md`. Mục này thay thế các kết
+luận Giai đoạn 2-5 ở trên; các đoạn cũ được giữ lại làm lịch sử.
+
+### Phát hiện
+
+README của dataset Roboflow ghi "No image augmentation", nhưng nhiều ảnh valid/test là
+bản **lật ngang** hoặc **crop/zoom** của ảnh train. `src/data/dedup_split.py` gom ảnh
+trùng thành nhóm bằng 3 tín hiệu: cùng tên nguồn và cùng lớp; dHash 16×16 kể cả bản
+lật; ORB + RANSAC cho bản crop/zoom. Các nhóm được nối bắc cầu bằng union-find. Ngưỡng
+được hiệu chỉnh trên dữ liệu thật và kiểm tra tận mắt.
+
+| Split gốc | Tổng | Trùng nhóm với ảnh train | Sạch |
+|---|---|---|---|
+| valid | 203 | 122 | 81 |
+| test | 101 | **59** | **42** |
+
+1013 ảnh chỉ có **552 nhóm ảnh độc lập**.
+
+### Model cũ trên test sạch
+
+| `yolov8n_v1_baseline`, test gốc | mAP@0.5 | mAP@0.5:0.95 | P | R |
+|---|---|---|---|---|
+| đủ 101 ảnh (có rò rỉ) | 0.994 | 0.833 | 0.987 | 0.977 |
+| 42 ảnh sạch | 0.995 | **0.774** | 0.964 | 0.977 |
+
+Rò rỉ thổi phồng mAP@0.5:0.95 khoảng **6 điểm**. mAP@0.5 gần như không đổi: ở IoU 0.5,
+v1 vẫn thật sự dễ. Lỗi thật nằm ở độ khít của box và ở ảnh ngoài phân bố.
+
+### Split mới và train lại
+
+Chia lại theo nhóm, tỉ lệ 70/15/15, phân tầng theo lớp, seed 42: **train 703 / valid
+156 / test 154 ảnh, không nhóm nào nằm ở hai split**. Danh sách chia được commit ở
+`data/splits/yoga_v1_clean_manifest.csv` để Colab tái tạo đúng split.
+
+`yolov8n_v1_clean_baseline` dùng cùng config chính thức (`yolov8n.pt`, seed 42, 50
+epoch, augmentation ON). Trên test mới 154 ảnh: **mAP@0.5 0.991, mAP@0.5:0.95 0.824,
+P 0.953, R 0.987**. Theo lớp (mAP@0.5:0.95): bridge 0.884, downward 0.881, plank 0.816,
+shoulderstand 0.789, tree 0.751.
+
+### Error analysis trên lỗi thật
+
+- **Test sạch, conf 0.5: 7/154 ảnh có lỗi, toàn bộ là `shoulderstand`.** Gồm 4 bỏ
+  sót, 3 nhầm lớp (2 → `bridge`, 1 → `downward`) và 2 box thừa. Theo từng ảnh, nguyên
+  nhân là ảnh đồ hoạ/minh hoạ, nhiều người chồng lấn, hoặc người nhỏ ngược sáng.
+- **EigenCAM trên ảnh sai:** ở ảnh nhiều người, vùng kích hoạt trải ra nền thay vì vào
+  người; ở hình vẽ, nó chỉ phủ một dải hẹp quanh hông.
+- **OOD mở rộng: 45 ảnh, đủ 5 lớp, 8-10 ảnh/lớp.** Gồm 18 ảnh Kaggle cũ và 27 ảnh
+  Wikimedia Commons có license rõ ràng, đã kiểm tra không trùng với Roboflow.
+  `clean_baseline` đúng **37/45 (82.2%)**; 6/8 ảnh sai là `plank` (side plank, cảnh
+  ngoài trời có người nhỏ hoặc đông người).
+- Lỗi trên test (shoulderstand) và lỗi OOD (plank) rơi vào hai lớp khác nhau. Nghĩa là
+  test cùng phân bố không đại diện cho lỗi người dùng thật gặp.
+
+### Feedback loop (rubric mục 5), làm lại
+
+Thay đổi duy nhất: `yolov8n.pt` → `yolov8s.pt` (model lớn hơn), giữ nguyên seed, epoch
+và dữ liệu.
+
+| Run | mAP@0.5 | mAP@0.5:0.95 | Ảnh test lỗi | OOD |
+|---|---|---|---|---|
+| `yolov8n_v1_clean_baseline` (trước) | 0.991 | **0.824** | **7** | **82.2%** |
+| `yolov8n_v1_clean_feedback`, yolov8s (sau) | 0.988 | 0.816 | 10 | 71.1% |
+
+**Không cải thiện:** kém hơn ở cả 3 thước đo, dù mAP trên valid nhỉnh hơn 0.7 điểm.
+Giả thuyết (chưa kiểm chứng): model có số tham số gấp ~3.5 lần nên khớp quá mức với 703
+ảnh train. Giới hạn: chỉ 1 seed, và test chỉ có 88 nhóm độc lập, nên chênh dưới 1 điểm
+mAP nằm trong nhiễu. Thay đổi này cũng không nhắm đúng pattern lỗi quan sát được
+(người nhỏ, đông người, biến thể tư thế). Hướng tiếp theo hợp lý hơn là tăng
+augmentation `scale` cho người nhỏ và bổ sung ảnh side plank, ảnh ngoài trời.
+
+### Model chạy PROD
+
+| Model (ONNX, đo qua đúng code của app, conf 0.5) | OOD đúng | Không phát hiện |
+|---|---|---|
+| `yolov8n_v1_baseline` (cũ, đang chạy PROD) | **40/45** | 4 |
+| `yolov8n_v1_clean_baseline` | 37/45 | — |
+| `yolov8n_v1_final_alldata` (train lại trên đủ 1013 ảnh) | 37/45 | 6 |
+
+Không model mới nào hơn model đang chạy, nên **giữ nguyên model PROD**. Model cũ và
+`final_alldata` cùng config, cùng dữ liệu mà vẫn chênh 3/45 ảnh: đây là mức dao động
+giữa các lần train, không phải bằng chứng model cũ tốt hơn một cách có hệ thống. Số đo
+**trung thực** của model PROD là trên 42 ảnh test sạch (mAP@0.5:0.95 0.774) và OOD
+40/45. Không dùng số trên 101 ảnh test gốc.
+
+### Hiệu năng trên PROD (Render free, 512 MB RAM)
+
+`scripts/load_test.py` bắn request thẳng vào URL public, dùng cùng một ảnh 740×1159,
+20 request ở mỗi mức đồng thời (kết quả trong `docs/perf/`):
+
+| Đồng thời | Trước: lỗi / p95 / req/s | Threadpool: lỗi / p95 / req/s | Threadpool + giới hạn 2: lỗi / p95 / req/s |
+|---|---|---|---|
+| 1 | 0% / 6.3s / 0.19 | 5% / 6.6s / 0.18 (1 lỗi 502 chưa giải thích được) | 0% / 6.1s / 0.20 |
+| 2 | 0% / 10.9s / 0.20 | 0% / 8.5s / 0.28 | 0% / 9.3s / 0.26 |
+| 4 | 10% / 42.1s / 0.21 | 0% / 13.3s / 0.37 | 0% / 16.4s / 0.27 |
+| 8 | 25% / 49.1s / 0.18 | **100% lỗi 502** | **0% / 31.1s / 0.27** |
+
+- **Trước:** route `async def` chạy code nặng CPU trực tiếp nên chặn event loop. Mọi
+  request phải xếp hàng nối tiếp: server mất ~4.8s/ảnh, thời gian chờ phía client tăng
+  tuyến tính.
+- **Threadpool:** ở 2-4 request đồng thời, throughput tăng 1.4-1.8 lần và p95 giảm từ
+  42s xuống 13s. Nhưng ở 8 request đồng thời, process chết rồi khởi động lại: 8 request
+  đầu lỗi cùng lúc, các request sau lỗi ngay. Giả thuyết là **hết RAM** (512 MB) — chưa
+  xác nhận qua log Render, nhưng tái hiện được ở local: peak RSS 555 MB khi không giới
+  hạn, 362 MB khi chỉ xử lý 2 ảnh cùng lúc (với ảnh điện thoại 12 MP: 1032 MB → 510 MB).
+- **Threadpool + giới hạn 2 ảnh cùng lúc** (`MAX_CONCURRENT_PREDICTIONS=2`, đo
+  2026-11-10): **80/80 request thành công ở mọi mức**, kể cả 8 đồng thời (trước đó 25% và
+  100% lỗi). Đổi lại throughput dừng ở ~0.27 req/s thay vì 0.37 và p95 ở 4 đồng thời là
+  16s thay vì 13s: request thứ 3 trở đi xếp hàng chờ thay vì làm sập server. Server p50
+  giữ ~7s từ mức 2 trở lên, đúng như chỉ có 2 ảnh được xử lý cùng lúc — xác nhận bản có
+  giới hạn đang chạy trên Render. Việc process không còn chết khi giới hạn RAM ủng hộ giả
+  thuyết hết RAM, nhưng vẫn chưa phải bằng chứng trực tiếp từ log.
+- **Cold start thật** (service ngủ nhiều ngày): `/health` trả lời sau **22.5s**, `/predict`
+  đầu tiên thêm **10.1s** (nạp ONNX + MediaPipe lần đầu) → người dùng đầu tiên chờ ~33s.
+
+### Bài học
+
+Tin README của dataset mà không kiểm tra khiến mọi kết luận Giai đoạn 2-5 dựa trên số
+liệu ảo, nhất là kết luận "không có lỗi để sửa" ở Giai đoạn 4-5. Kiểm tra trùng lặp
+giữa các split nên là bước đầu tiên của khâu Data, trước khi train.

@@ -29,29 +29,34 @@ Slide 1-2. Ý cần nói:
 - 2 lớp: YOLOv8 **tự train** (detect+classify) vs MediaPipe **pretrained**
   vs rule-based **tự nghĩ** (chấm form) — không lẫn lộn 3 loại.
 
-## 3. Dữ liệu + Training (~40s)
+## 3. Dữ liệu + Training (~60s)
 
 Slide 3-4. Ý cần nói:
-- 5 lớp, Roboflow, v2 (15-20 lớp) chỉ dừng ở thiết kế vì v1 đã đủ tốt.
-- seed=42, epochs=50, ablation augmentation ON thắng OFF.
+- 5 lớp, Roboflow, 1013 ảnh. README ghi "không augmentation" nhưng 59/101 ảnh
+  test là bản lật/crop của ảnh train → chia lại theo nhóm ảnh trùng.
+- Đo lại: mAP@0.5:0.95 của model cũ từ 0.833 xuống 0.774 trên test sạch; train
+  lại trên split sạch được 0.824.
 
-## 4. Kết quả (~50s)
+## 4. Kết quả (~70s)
 
 Slide 5-8. Ý cần nói (đọc thẳng số trên slide, không cần thuộc):
-- Confusion matrix sạch, EigenCAM nhìn đúng chỗ.
-- OOD 94.4% (17/18) → không cần retrain.
-- Form scoring: 14/15 + 5/5, có 2 hạn chế đã biết (MediaPipe pose lộn
-  ngược, góc 2D bị méo khi camera chụp xiên).
-- Latency: ONNX nhanh hơn PyTorch ~17%, CPU free tier chậm hơn (không
-  phải bug).
+- Test sạch lộ ra lỗi thật: 7/154 ảnh, toàn bộ shoulderstand. OOD 45 ảnh: 82.2%,
+  lỗi tập trung ở plank.
+- Feedback loop: đổi sang yolov8s, đo trước/sau → **không cải thiện**, giữ yolov8n.
+  Nói thẳng kết quả âm, kèm giả thuyết và hướng tiếp theo.
+- Form scoring: 14/15 + 5/5, có 2 hạn chế đã biết (MediaPipe pose lộn ngược, góc
+  2D bị méo khi camera chụp xiên).
+- Stress test thẳng vào Render: 8 request đồng thời lúc đầu lỗi 25%, sửa lần 1 còn
+  làm server sập, giới hạn 2 ảnh xử lý cùng lúc thì 0% lỗi.
 
 ## 5. Lỗi & bài học (~30s)
 
-Slide 10. Chọn 1-2 bug kể cho sinh động, vd:
-> "Lúc đầu OOD accuracy báo 0% — hoá ra do chưa bỏ tiền tố tên lớp, sửa
-> xong ra 94.4%. Lúc deploy cũng dính đủ thứ: chọn nhầm runtime nên
-> thiếu thư viện, rồi camera iPhone bị đẩy vào chế độ xem toàn màn hình
-> của iOS — đều tự chẩn đoán qua log/screenshot thật, không đoán mò."
+Slide 10. Kể bài học lớn nhất trước:
+> "Mình đã tin README của dataset ghi không có augmentation, nên lúc đầu điểm gần
+> như tuyệt đối và kết luận là không có gì để sửa. Kiểm tra lại thì hơn nửa tập test
+> là bản sao ảnh train. Chia lại dữ liệu mới thấy lỗi thật. Hiệu năng cũng vậy: đo
+> trên máy train thì ổn, bắn thẳng vào server thật mới thấy server sập khi nhiều
+> người dùng cùng lúc."
 
 ## 6. Demo app chạy thật (~2.5-4 phút — phần trọng tâm)
 
@@ -80,6 +85,6 @@ Slide 12. Cảm ơn + nhắc link repo/demo hiện trên màn hình.
 
 ---
 
-**Tổng ước lượng:** ~4.5-6.5 phút (chưa tính khoảng chờ Render cold-start
+**Tổng ước lượng:** ~5-7 phút (chưa tính khoảng chờ Render cold-start
 nếu có) — nằm trong khoảng 5-10 phút yêu cầu; nếu ngắn hơn 5 phút, kéo dài
 phần 6 (demo) bằng cách thử thêm 1-2 tư thế khác thay vì thêm lý thuyết.

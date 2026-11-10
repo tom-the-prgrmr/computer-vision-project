@@ -443,6 +443,29 @@ Ultralytics chạy được — không phải điểm test) và 2 cell cuối no
 "best" theo val đã nằm trong train), đo OOD. Deploy bản này **chỉ khi** OOD qua app
 không kém model cũ (40/45); nếu kém thì giữ model cũ và ghi đúng như vậy.
 
+**T12.8 — kết quả (2026-11-10): giữ model cũ ở PROD.** `yolov8n_v1_final_alldata`
+(`last.pt`, 1013 ảnh, đúng config `clean_baseline`) export ONNX, đo 45 ảnh OOD qua đúng
+đường chạy của app (`PoseDetectionService.predict_image`):
+
+| Model | OOD đúng, conf ≥ 0.5 (ngưỡng PROD) | Không phát hiện | OOD đúng, conf ≥ 0.25 |
+|---|---|---|---|
+| `yolov8n_v1_baseline` (cũ, đang ở PROD) | **40/45 (88.9%)** | 4 | **41/45** |
+| `yolov8n_v1_clean_baseline` | 37/45 (82.2%) | — | — |
+| `yolov8n_v1_final_alldata` | 37/45 (82.2%) | 6 | 38/45 |
+
+Model final không kém hơn vì thiếu dữ liệu (nó thấy đủ 1013 ảnh như model cũ) — nó chủ
+yếu **bỏ sót nhiều hơn** (6 vs 4 ảnh không phát hiện ở conf 0.5), kể cả ảnh model cũ bắt
+được với độ tin cậy 0.91. Hai model cùng config, cùng dữ liệu, chỉ khác lần train → chênh
+3/45 ảnh nằm trong mức dao động giữa các lần train (1 seed, mẫu OOD nhỏ); không có bằng
+chứng model cũ "tốt hơn" một cách có hệ thống, chỉ là không có lý do để thay nó.
+
+Theo điều kiện đã chốt (chỉ deploy nếu không kém 40/45) → **không thay `models/best.onnx`,
+không redeploy.** Hệ quả cho báo cáo (T12.11): model đang chạy PROD là
+`yolov8n_v1_baseline`; số đo **trung thực** của chính model này là trên 42 ảnh test sạch
+của split gốc (T12.3: `.pt` mAP@0.5 0.995 / mAP@0.5:0.95 0.774) và OOD 40/45 — **không**
+dùng số 101 ảnh test gốc (bị rò rỉ). Số `clean_baseline` (test 154 ảnh) là bằng chứng
+cho quy trình split sạch và vòng cải tiến T12.7.
+
 **Deferred / cần bạn:** T12.4 phần ảnh điện thoại, T12.8 (export
 `yolov8n_v1_clean_baseline` + deploy — export ONNX không cần GPU), T12.10 deploy lại +
 đo lần 3 ở 8 đồng thời + đo cold start sau ≥ 15 phút ngủ, T12.11 (docs).
